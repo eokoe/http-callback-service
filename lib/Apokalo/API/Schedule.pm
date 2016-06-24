@@ -38,7 +38,7 @@ sub add {
 
 sub get {
     my ( $self, %opts ) = @_;
-    die "Value '{$opts{id}}' does not pass as UUID\n" unless is_uuid_string $opts{id};
+    die "Value \"{$opts{id}}\" did not pass UUID constraint\n" unless is_uuid_string $opts{id};
 
     my $row = $self->_http_request_rs->search(
         { id => $opts{id} },
