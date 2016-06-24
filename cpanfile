@@ -8,4 +8,5 @@ requires 'DBD::Pg';
 requires 'DBIx::Class::InflateColumn::DateTime';
 requires 'Web::Simple';
 requires 'Type::Tiny';
+requires 'UUID::Tiny';
 requires 'Data::Validate::URI';

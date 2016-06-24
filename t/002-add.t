@@ -27,6 +27,12 @@ eval {
 
             is( $row->retry_each, '00:00:22', 'retry_each looks good' );
 
+            my $row2 = $api->get( id => $row->id);
+
+            is_deeply($row2, $row, 'same row');
+
+            eval{$api->get( id => 'asdas')};
+            ok($@, 'invalid id ' . $@);
             die 'rollback';
         }
     );

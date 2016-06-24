@@ -1,7 +1,7 @@
 # HTTP callback service
 This service is a simple way to make http callback with automatic retry and scheduling.
 
-Speed is not a goal, as it will queue it on postgres and pull each second, but others jobs may be blocking processing.
+Speed is not a goal, because workers pull database each second, but all workers may be busy (can be solved by using some MQ and async http).
 
 It's intended to be used inside an secure network (as it does not have any authorization by now).
 
