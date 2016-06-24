@@ -1,7 +1,9 @@
 # HTTP callback service
-This service is a simple way to make http callback with automatic retry and scheduling
+This service is a simple way to make http callback with automatic retry and scheduling.
 
-It's intended to be used inside an secure network (as it does not have any authorization by now)
+Speed is not a goal, as it will queue it on postgres and pull each second, but others jobs may be blocking processing.
+
+It's intended to be used inside an secure network (as it does not have any authorization by now).
 
 As a user, you may do an (guess what, http) request with, at least:
 
@@ -13,7 +15,7 @@ As a user, you may do an (guess what, http) request with, at least:
 
 And if everything looks good, you receive an ID (and HTTP 200), where you can check it status later.
 
-##  Optionals paramenters
+## Optional parameters
 
     wait_until        = unix-timestamp (UTC 0); default no waiting
     retry_until       = unix-timestamp (UTC 0); default 5 days
@@ -38,7 +40,7 @@ linux with curl:
 - start-stop-daemon 1.17.5 and newer
 - cpanm
 
-> It's tested on ubuntu 14.04 LTS, but may work in a lot of others linux distributions
+> It's tested on ubuntu 14.04 LTS, but may work on lot of others linux distributions
 
 # Configuration files
 
@@ -65,5 +67,7 @@ HTTP_CB_ENV=deploy/env_local.sh deploy/restart_services.sh
 
 ## TODO
 
-- configurable when to delete requests from database
--
+- authorization
+- way to configure when to delete requests from database
+- .deb install?
+- Use HTTP::Async instead of forks?
