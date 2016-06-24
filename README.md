@@ -14,8 +14,8 @@ And if everything looks good, you receive an ID (and HTTP 200), where you can ch
 
 ## Optional parameters
 
-    headers = Heahder: Value, add many using \n
-    body    = anything goes (in reality utf8 text)
+    headers           = Header-Name: Value, add many using \n
+    body              = utf8 text only
     wait_until        = unix-timestamp (UTC 0); default no waiting
     retry_until       = unix-timestamp (UTC 0); default 5 days
     retry_each        = in seconds; default 15
@@ -25,7 +25,7 @@ And if everything looks good, you receive an ID (and HTTP 200), where you can ch
 
 linux with curl:
 
-    curl -X POST http://127.0.0.1:2626/schedule?method=post&url=http%3a%2f%2fexemple.com%3ffoo%3dbar&headers=X-token%3a+100%0d%0ax-api-secret%3a+bar&body=HELO&secure=1
+    curl -X POST 'http://127.0.0.1:2626/schedule?method=post&url=http%3a%2f%2fexemple.com%3ffoo%3dbar&headers=X-token%3a+100%0d%0ax-api-secret%3a+bar&body=HELO&secure=1'
 
 # Endpoints
 
