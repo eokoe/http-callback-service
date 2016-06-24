@@ -85,18 +85,18 @@ __PACKAGE__->table("http_request");
   default_value: '00:00:15'
   is_nullable: 0
 
-=head2 retry_multiplier
-
-  data_type: 'smallint'
-  default_value: 2
-  is_nullable: 0
-
 =head2 wait_until
 
   data_type: 'timestamp'
   default_value: current_timestamp
   is_nullable: 0
   original: {default_value => \"now()"}
+
+=head2 retry_multiplier
+
+  data_type: 'real'
+  default_value: 2
+  is_nullable: 0
 
 =cut
 
@@ -143,8 +143,6 @@ __PACKAGE__->add_columns(
   },
   "retry_each",
   { data_type => "interval", default_value => "00:00:15", is_nullable => 0 },
-  "retry_multiplier",
-  { data_type => "smallint", default_value => 2, is_nullable => 0 },
   "wait_until",
   {
     data_type     => "timestamp",
@@ -152,6 +150,8 @@ __PACKAGE__->add_columns(
     is_nullable   => 0,
     original      => { default_value => \"now()" },
   },
+  "retry_multiplier",
+  { data_type => "real", default_value => 2, is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -199,8 +199,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-24 01:09:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j84r3r1TKtFyS5bMafSriA
+# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-24 03:55:21
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:c1oHM21eSovh3yA8Whpowg
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

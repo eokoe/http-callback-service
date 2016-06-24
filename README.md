@@ -10,7 +10,7 @@ As a user, you may do an (guess what, http) request with, at least:
     method  = POST, GET, PUT or HEAD
     url     = http or https + host + (maybe a port) and path_query
 
-And if everything looks good, you receive an ID (and HTTP 200), where you can check it status later.
+Return an HTTP 201 with header Location, where you can GET to check for success
 
 ## Optional parameters
 
@@ -25,7 +25,7 @@ And if everything looks good, you receive an ID (and HTTP 200), where you can ch
 
 linux with curl:
 
-    curl -X POST 'http://127.0.0.1:2626/schedule?method=post&url=http%3a%2f%2fexemple.com%3ffoo%3dbar&headers=X-token%3a+100%0d%0ax-api-secret%3a+bar&body=HELO&secure=1'
+    curl -X POST 'http://127.0.0.1:2626/schedule?method=post&url=http%3a%2f%2fexemple.com%3ffoo%3dbar&headers=X-token%3a+100%0d%0ax-api-secret%3a+bar&body=HELO'
 
 # Endpoints
 
