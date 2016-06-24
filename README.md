@@ -60,7 +60,7 @@ If you need change database settings, edit on sqitch.conf
 
 ## Gracefully reloading or starting
 
-HTTP_CB_ENV=deploy/env_local.sh deploy/restart_services.sh
+HTTP_CB_ENV_FILE=deploy/env_local.sh deploy/restart_services.sh
 
 > if changed envs_local.sh postgres configuration, you will need to `fuser 2626/tcp -k`, not gracefully, as the server_starter fork doesn't get fresh envs before starting the new code.
 
