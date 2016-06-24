@@ -9,8 +9,10 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(GET_SCHEMA);
 
+my $connection;
 sub GET_SCHEMA {
 
+    return $connection if $connection;
     log_info "require Apokalo::Schema...";
     require Apokalo::Schema;
 
@@ -21,7 +23,7 @@ sub GET_SCHEMA {
     my $db_user = $ENV{HTTP_CB_DB_USER} || 'postgres';
     my $db_name = $ENV{HTTP_CB_DB_NAME} || 'httpcallback_dev';
 
-    Apokalo::Schema->connect(
+    return $connection = Apokalo::Schema->connect(
         "dbi:Pg:host=$db_host;port=$db_port;dbname=$db_name",
         $db_user, $db_pass,
         {

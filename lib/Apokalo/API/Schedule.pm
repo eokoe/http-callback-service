@@ -12,4 +12,4 @@ has '_http_request_rs' => (
     }
 );
 
-1;
+( ( $ENV{HARNESS_ACTIVE} || $0 =~ /forkprove/ ) ? do { &GET_SCHEMA } : 1 );

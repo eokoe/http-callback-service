@@ -57,6 +57,20 @@ If you need change database settings, edit on sqitch.conf
     createdb httpcallback_dev -h 127.0.0.1 -U postgres
     sqitch deploy -t local
 
+## Installing modules deps
+
+    cpanm --installdeps . # -n
+
+## Running tests
+
+As fast as possible, hard to read output.
+    forkprove -MApokalo::API::Schedule -lr -j 4 t/
+
+Good speed vs readability
+    DBIC_TRACE=1 TRACE=1 forkprove -MApokalo::API::Schedule -lvr -j 1 t/
+
+Slower, but does not need forkprove
+    prove -lvr t/
 
 ## Gracefully reloading or starting
 
