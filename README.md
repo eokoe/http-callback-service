@@ -44,10 +44,13 @@ linux with curl:
 
 # Configuration files
 
-- sqitch.conf
+- **sqitch.conf**
+
     have the databae settings for the Sqitch (database versioning)
-- deploy/envs.sample.sh
-    has the default ENVs that the system uses. Copy or rename it to deploy/envs_local.sh and run-it before running anything that's not default.
+
+- **deploy/envs.sample.sh**
+
+    have the default ENVs. Copy it to **deploy/envs_local.sh**; if you do that, run it before running anything
 
 # Setup
 
@@ -61,23 +64,26 @@ If you need change database settings, edit on sqitch.conf
 
     cpanm --installdeps . # -n
 
-## Running tests
 
-As fast as possible, hard to read output.
-    forkprove -MApokalo::API::Schedule -lr -j 4 t/
+## Starting / gracefully reloading
 
-Good speed vs readability
-    DBIC_TRACE=1 TRACE=1 forkprove -MApokalo::API::Schedule -lvr -j 1 t/
-
-Slower, but does not need forkprove
-    prove -lvr t/
-
-## Gracefully reloading or starting
-
-HTTP_CB_ENV_FILE=deploy/env_local.sh deploy/restart_services.sh
+    HTTP_CB_ENV_FILE=deploy/env_local.sh deploy/restart_services.sh
 
 > if changed envs_local.sh postgres configuration, you will need to `fuser 2626/tcp -k`, not gracefully, as the server_starter fork doesn't get fresh envs before starting the new code.
 
+## Running tests
+
+As fast as possible, hard to read output.
+
+    forkprove -MApokalo::API::Schedule -lr -j 4 t/
+
+Good speed vs readability
+
+    DBIC_TRACE=1 TRACE=1 forkprove -MApokalo::API::Schedule -lvr -j 1 t/
+
+Slower, but does not need forkprove
+
+    prove -lvr t/
 
 ## TODO
 
