@@ -9,13 +9,13 @@ As a user, you may do an (guess what, http) request with, at least:
 
     method  = POST, GET, PUT or HEAD
     url     = http or https + host + (maybe a port) and path_query
-    headers = Heahder: Value, add many using \n
-    body    = anything goes (in reality utf8 text)
 
 And if everything looks good, you receive an ID (and HTTP 200), where you can check it status later.
 
 ## Optional parameters
 
+    headers = Heahder: Value, add many using \n
+    body    = anything goes (in reality utf8 text)
     wait_until        = unix-timestamp (UTC 0); default no waiting
     retry_until       = unix-timestamp (UTC 0); default 5 days
     retry_each        = in seconds; default 15
