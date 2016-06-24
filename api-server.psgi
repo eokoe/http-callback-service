@@ -53,11 +53,14 @@ sub dispatch_request {
             $ret = { error => $err_msg };
         }
 
+        return [ 404, [ 'Content-Type' => 'application/json' ], [ encode_json( {error => 'Object not found'} ) ] ]
+          if !$ret;
+
         return [ $code, [ 'Content-Type' => 'application/json' ], [ encode_json($ret) ], ];
-      }, sub (PUT + /schedule/...) {
-        [ 405, [ 'Content-type', 'text/plain' ], ['Method not allowed'] ];
+      }, sub (/schedule/...) {
+        [ 405, [ 'Content-Type' => 'application/json' ], [ encode_json( {error => 'Method not allowed'} ) ] ];
       }, sub () {
-        [ 404, [ 'Content-type', 'text/plain' ], ['Page not found'] ];
+        [ 404, [ 'Content-Type' => 'application/json' ], [ encode_json( {error => 'Page not found'} ) ] ];
       }
 }
 
