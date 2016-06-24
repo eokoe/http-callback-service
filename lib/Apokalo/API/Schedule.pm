@@ -33,14 +33,40 @@ sub add {
         }
     );
 
-    return $row;
+    return $self->get( id => $row->id );
 }
 
 sub get {
-    my ($self, %opts) = @_;
+    my ( $self, %opts ) = @_;
     die "Value '{$opts{id}}' does not pass as UUID\n" unless is_uuid_string $opts{id};
-    $self->_http_request_rs->find($opts{id});
 
+    my $row = $self->_http_request_rs->search(
+        { id => $opts{id} },
+        {
+            join      => 'http_request_status',
+            'columns' => [
+                {
+                    (
+                        map { $_ => $_ }
+                          qw/body
+                          headers
+                          id
+                          method
+
+                          retry_multiplier
+                          url
+                          /
+                    ),
+                    ( map { $_ => \"EXTRACT(EPOCH FROM $_)::int" } qw/retry_each retry_until wait_until created_at/ ),
+                    success => \'CASE WHEN (http_request_status.done) THEN TRUE ELSE FALSE END',
+                    try_num => \
+                      'CASE WHEN (http_request_status.try_num IS NULL) THEN  0 ELSE http_request_status.try_num END',
+                }
+            ],
+            result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+        }
+    )->next;
+    return $row;
 }
 
 ( ( $ENV{HARNESS_ACTIVE} || $0 =~ /forkprove/ ) ? do { &GET_SCHEMA } : 1 );

@@ -12,7 +12,7 @@ eval {
     $api->schema->txn_do(
         sub {
 
-            $api->add(
+            my $row = $api->add(
 
                 method           => 'get',
                 headers          => "Foo: bar\nFoo-www: 22",
@@ -22,15 +22,14 @@ eval {
                 wait_until       => time
             );
 
-            ok( my $row = $api->_http_request_rs->next, 'good, one line inserted!' );
-            is( $row->url, 'http://exemple.com:8080?aa', 'url looks good' );
+            is( $api->_http_request_rs->count, '1', 'good, one line inserted!' );
+            is( $row->{url}, 'http://exemple.com:8080?aa', 'url looks good' );
 
-            is( $row->retry_each, '00:00:22', 'retry_each looks good' );
+            is( $row->{retry_each}, '22', 'retry_each looks good' );
 
-            my $row2 = $api->get( id => $row->id);
+            my $row2 = $api->get( id => $row->{id});
 
-            is_deeply($row2, $row, 'same row');
-
+            is_deeply($row2, $row, 'same add and get return same struct');
             eval{$api->get( id => 'asdas')};
             ok($@, 'invalid id ' . $@);
             die 'rollback';
