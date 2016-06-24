@@ -73,12 +73,6 @@ __PACKAGE__->table("http_request");
   is_nullable: 1
   original: {data_type => "varchar"}
 
-=head2 secure
-
-  data_type: 'boolean'
-  default_value: true
-  is_nullable: 0
-
 =head2 retry_until
 
   data_type: 'timestamp'
@@ -96,6 +90,13 @@ __PACKAGE__->table("http_request");
   data_type: 'smallint'
   default_value: 2
   is_nullable: 0
+
+=head2 wait_until
+
+  data_type: 'timestamp'
+  default_value: current_timestamp
+  is_nullable: 0
+  original: {default_value => \"now()"}
 
 =cut
 
@@ -134,8 +135,6 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     original    => { data_type => "varchar" },
   },
-  "secure",
-  { data_type => "boolean", default_value => \"true", is_nullable => 0 },
   "retry_until",
   {
     data_type     => "timestamp",
@@ -146,6 +145,13 @@ __PACKAGE__->add_columns(
   { data_type => "interval", default_value => "00:00:15", is_nullable => 0 },
   "retry_multiplier",
   { data_type => "smallint", default_value => 2, is_nullable => 0 },
+  "wait_until",
+  {
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
+    is_nullable   => 0,
+    original      => { default_value => \"now()" },
+  },
 );
 
 =head1 PRIMARY KEY
@@ -193,8 +199,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-23 22:55:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JZhkvShm4AVizQUdURuLBg
+# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-24 01:09:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:j84r3r1TKtFyS5bMafSriA
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;

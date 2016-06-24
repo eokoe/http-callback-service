@@ -8,10 +8,9 @@ It's intended to be used inside an secure network (as it does not have any autho
 As a user, you may do an (guess what, http) request with, at least:
 
     method  = POST, GET, PUT or HEAD
-    url     = scheme, host, port and path_query
+    url     = http or https + host + (maybe a port) and path_query
     headers = Heahder: Value, add many using \n
     body    = anything goes (in reality utf8 text)
-    secure  = 0 if url[host] does not support https, default 1
 
 And if everything looks good, you receive an ID (and HTTP 200), where you can check it status later.
 

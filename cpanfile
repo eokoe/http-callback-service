@@ -6,3 +6,6 @@ requires 'Log::Log4perl';
 requires 'DBIx::Class::Schema::Loader';
 requires 'DBD::Pg';
 requires 'DBIx::Class::InflateColumn::DateTime';
+requires 'Web::Simple';
+requires 'Type::Tiny';
+requires 'Data::Validate::URI';
