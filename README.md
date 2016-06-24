@@ -69,7 +69,7 @@ If you need change database settings, edit on sqitch.conf
 
     HTTP_CB_ENV_FILE=deploy/env_local.sh deploy/restart_services.sh
 
-> if changed envs_local.sh postgres configuration, you will need to `fuser 2626/tcp -k`, not gracefully, as the server_starter fork doesn't get fresh envs before starting the new code.
+> When HTTP_CB_DB_* is changed, you will need to run `fuser $HTTP_CB_API_PORT/tcp -k`. This is not gracefully, but needed as the server_starter fork don't get fresh ENV before starting the new code.
 
 ## Running tests
 
