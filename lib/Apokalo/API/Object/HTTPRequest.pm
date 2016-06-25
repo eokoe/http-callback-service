@@ -64,7 +64,7 @@ has 'retry_each' => (
     isa => $SmallInt
 );
 
-has 'retry_multiplier' => (
+has 'retry_exp_base' => (
     is  => 'ro',
     isa => $SmallNum
 );

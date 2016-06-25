@@ -19,7 +19,7 @@ Return an HTTP 201 with header Location, where you can GET to check for success
     wait_until        = unix-timestamp (UTC 0); default no waiting
     retry_until       = unix-timestamp (UTC 0); default 5 days
     retry_each        = in seconds; default 15
-    retry_multiplier  = smallint (retry_multiplier * retry_each * try number); default 2
+    retry_exp_base    = real ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each); default 2
 
 # Usage
 

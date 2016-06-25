@@ -3,10 +3,12 @@ use warnings;
 use Test::More;
 
 BEGIN { use_ok 'Apokalo::SchemaConnected' }
-
 BEGIN { use_ok 'Apokalo::API::Schedule' }
+BEGIN { use_ok 'Apokalo::Daemon::ProcessQueue' }
 
 my $api = Apokalo::API::Schedule->new;
+
+my $daemon = Apokalo::Daemon::ProcessQueue->new( schema => $api->schema );
 
 eval {
     $api->schema->txn_do(
@@ -23,15 +25,10 @@ eval {
             );
 
             is( $api->_http_request_rs->count, '1', 'good, one line inserted!' );
-            is( $row->{url}, 'http://exemple.com:8080?aa', 'url looks good' );
 
-            is( $row->{retry_each}, '22', 'retry_each looks good' );
+            my @pen = $daemon->pending_jobs;
+            is(scalar @pen, 1, 'has pending jobs');
 
-            my $row2 = $api->get( id => $row->{id});
-
-            is_deeply($row2, $row, 'same add and get return same struct');
-            eval{$api->get( id => 'asdas')};
-            ok($@, 'invalid id ' . $@);
             die 'rollback';
         }
     );

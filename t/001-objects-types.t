@@ -11,7 +11,7 @@ eval {
         headers          => "Foo: bar\nFoo-www: 22",
         url              => 'http://exemple.com:8080?aa',
         retry_each       => 22,
-        retry_multiplier => 1.24,
+        retry_exp_base => 1.24,
         wait_until       => time
     );
 };
@@ -32,10 +32,10 @@ eval {
         headers          => 'Foo: bar',
         url              => 'http://exemple.com',
         retry_each       => 22,
-        retry_multiplier => -1.24
+        retry_exp_base => -1.24
     );
 };
-ok( $@, "error on negative retry_multiplier" );
+ok( $@, "error on negative retry_exp_base" );
 
 eval {
     Apokalo::API::Object::HTTPRequest->new(

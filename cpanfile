@@ -10,3 +10,6 @@ requires 'Web::Simple';
 requires 'Type::Tiny';
 requires 'UUID::Tiny';
 requires 'Data::Validate::URI';
+
+requires 'Net::Async::HTTP';
+requires 'IO::Async::SSL';

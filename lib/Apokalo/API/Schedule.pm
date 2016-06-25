@@ -22,8 +22,8 @@ sub add {
     my $row = $self->_http_request_rs->create(
         {
             ( map { $_ => $obj->$_ } qw/method headers body url/ ),
-            ( $obj->retry_each       ? ( retry_each       => $obj->retry_each . ' seconds' ) : () ),
-            ( $obj->retry_multiplier ? ( retry_multiplier => $obj->retry_multiplier )        : () ),
+            ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
+            ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base )          : () ),
 
             (
                 $obj->retry_until ? ( retry_until => DateTime->from_epoch( epoch => $obj->retry_until )->datetime ) : ()
@@ -46,17 +46,7 @@ sub get {
             join      => 'http_request_status',
             'columns' => [
                 {
-                    (
-                        map { $_ => $_ }
-                          qw/body
-                          headers
-                          id
-                          method
-
-                          retry_multiplier
-                          url
-                          /
-                    ),
+                    ( map { $_ => $_ } qw/body  headers id method retry_exp_base url / ),
                     ( map { $_ => \"EXTRACT(EPOCH FROM $_)::int" } qw/retry_each retry_until wait_until created_at/ ),
                     success => \'CASE WHEN (http_request_status.done) THEN TRUE ELSE FALSE END',
                     try_num => \

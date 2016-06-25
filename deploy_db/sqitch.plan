@@ -7,3 +7,4 @@
 0002-wait_until [0001-host-url] 2016-06-24T04:09:01Z renato,,, <renato@renato-Inspiron-5420> # wait_until
 0003-multiplier [0002-wait_until] 2016-06-24T04:41:10Z renato,,, <renato@renato-Inspiron-5420> # num
 0004-fix-mult [0003-multiplier] 2016-06-24T06:55:11Z renato,,, <renato@renato-Inspiron-5420> # multi
+0005-retry_multiplier [0004-fix-mult] 2016-06-25T07:58:05Z renato,,, <renato@renato-Inspiron-5420> # retry_exp_base

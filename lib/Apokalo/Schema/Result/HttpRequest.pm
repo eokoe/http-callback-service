@@ -92,7 +92,7 @@ __PACKAGE__->table("http_request");
   is_nullable: 0
   original: {default_value => \"now()"}
 
-=head2 retry_multiplier
+=head2 retry_exp_base
 
   data_type: 'real'
   default_value: 2
@@ -150,7 +150,7 @@ __PACKAGE__->add_columns(
     is_nullable   => 0,
     original      => { default_value => \"now()" },
   },
-  "retry_multiplier",
+  "retry_exp_base",
   { data_type => "real", default_value => 2, is_nullable => 0 },
 );
 
@@ -199,8 +199,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-24 03:55:21
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:c1oHM21eSovh3yA8Whpowg
+# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-25 04:58:33
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:COm21weyV6k94y3QS5daPw
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 1;
