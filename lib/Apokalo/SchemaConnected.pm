@@ -10,11 +10,17 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(GET_SCHEMA);
 
 my $connection;
+
 sub GET_SCHEMA {
 
+    my (%opts) = @_;
     return $connection if $connection;
     log_info "require Apokalo::Schema...";
     require Apokalo::Schema;
+
+    my $lock = '';
+    $lock = "SELECT pg_advisory_lock($opts{pg_advisory_lock});"
+      if exists $opts{pg_advisory_lock} && $opts{pg_advisory_lock} =~ /^[0-9]+$/;
 
     # database
     my $db_host = $ENV{HTTP_CB_DB_HOST} || 'localhost';
@@ -31,7 +37,8 @@ sub GET_SCHEMA {
             "quote_char"     => "\"",
             "name_sep"       => ".",
             "pg_enable_utf8" => 1,
-            "on_connect_do"  => "SET client_encoding=UTF8; SET timezone = 'UTC';"
+            auto_savepoint   => 1,
+            "on_connect_do"  => "SET client_encoding=UTF8; SET timezone = 'UTC'; $lock"
         }
     );
 
