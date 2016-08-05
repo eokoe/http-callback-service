@@ -86,10 +86,7 @@ sub run_once {
 
     my $async = $self->ahttp;
 
-    my $id = $async->add( $self->_self_add($pending) );
-    $http_ids->{$id}{id}   = $pending->{id};
-    $http_ids->{$id}{time} = time;
-    $http_ids->{$id}{try}  = $pending->{try_num};
+    $self->_self_add($pending);
 
     if ( $async->not_empty ) {
         if ( my ( $response, $iid ) = $async->wait_for_next_response(30) ) {
@@ -109,7 +106,14 @@ sub run_once {
 sub _self_add {
     my ( $self, $row ) = @_;
     my @headers = map { split /:\s+/, $_, 2 } split /\n/, $row->{headers};
-    return HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} );
+    my $async = $self->ahttp;
+
+    my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} ) );
+    $http_ids->{$id}{id}   = $row->{id};
+    $http_ids->{$id}{time} = time;
+    $http_ids->{$id}{try}  = $row->{try_num};
+
+    return $id;
 }
 
 sub _mark_done {
@@ -129,7 +133,7 @@ sub _mark_done {
                 {
                     http_request_id => $ref->{id},
                     try_num         => $ref->{try} + 1,
-                    took            => (time - $ref->{time}) . ' seconds',
+                    took            => ( time - $ref->{time} ) . ' seconds',
                     response        => $opts{res}->as_string
                 }
             );
