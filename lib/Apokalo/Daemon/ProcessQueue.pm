@@ -6,6 +6,8 @@ use Apokalo::Logger;
 use DateTime;
 use Apokalo::API::Object::HTTPRequest;
 use UUID::Tiny qw/is_uuid_string/;
+use HTTP::Async;
+use HTTP::Request;
 
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
 has '_http_request_rs' => (
@@ -14,6 +16,26 @@ has '_http_request_rs' => (
         shift->schema->resultset('HttpRequest');
     }
 );
+has '_http_request_status_rs' => (
+    is      => 'rw',
+    builder => sub {
+        shift->schema->resultset('HttpRequestStatus');
+    }
+);
+has '_http_response_rs' => (
+    is      => 'rw',
+    builder => sub {
+        shift->schema->resultset('HttpResponse');
+    }
+);
+use Time::HiRes qw(time);
+
+my $http_ids = {};
+has 'ahttp' => ( is => 'rw', lazy => 1, builder => '_build_http' );
+
+sub _build_http {
+    HTTP::Async->new;
+}
 
 sub pending_jobs {
     my ( $self, %opts ) = @_;
@@ -25,16 +47,23 @@ sub pending_jobs {
                 {
                     'http_request_status.done' => 0,
 
-                    -and => [ \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each) > now()' ],
+                    -and => [
+                        \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each) > now()'
+                    ],
 
                 }
             ],
             wait_until  => { '<=' => \'now()' },
             retry_until => { '>=' => \'now()' },
+            (
+                exists $opts{id_not_in}
+                  && ref $opts{id_not_in} eq 'ARRAY' ? ( '-not' => { 'me.id' => { 'in' => $opts{id_not_in} } } ) : ()
+              )
 
         },
         {
-            join      => 'http_request_status',
+            rows => $opts{rows} ? $opts{rows} : 10,
+            join => 'http_request_status',
             'columns' => [
                 {
                     ( map { $_ => $_ } qw/body  headers id method retry_exp_base url / ),
@@ -47,6 +76,67 @@ sub pending_jobs {
         }
     )->all;
     return @rows;
+}
+
+sub run_once {
+    my ( $self, %opts ) = @_;
+
+    my ($pending) = $self->pending_jobs( rows => 1 );
+    return -2 unless $pending;
+
+    my $async = $self->ahttp;
+
+    my $id = $async->add( $self->_self_add($pending) );
+    $http_ids->{$id}{id}   = $pending->{id};
+    $http_ids->{$id}{time} = time;
+    $http_ids->{$id}{try}  = $pending->{try_num};
+
+    if ( $async->not_empty ) {
+        if ( my ( $response, $iid ) = $async->wait_for_next_response(30) ) {
+
+            # deal with $response
+            $self->_mark_done( res => $response, ref => $http_ids->{$iid} );
+            return 1;
+        }
+        else {
+            return -1;
+        }
+    }
+
+    return -2;
+}
+
+sub _self_add {
+    my ( $self, $row ) = @_;
+    my @headers = map { split /:\s+/, $_, 2 } split /\n/, $row->{headers};
+    return HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} );
+}
+
+sub _mark_done {
+    my ( $self, %opts ) = @_;
+
+    $self->schema->txn_do(
+        sub {
+
+            my $ref = $opts{ref};
+
+            my $request_status =
+              $self->_http_request_status_rs->update_or_create(
+                { done => $opts{res}->is_success, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
+                { http_request_id => $ref->{id} } );
+
+            $self->_http_response_rs->create(
+                {
+                    http_request_id => $ref->{id},
+                    try_num         => $ref->{try} + 1,
+                    took            => (time - $ref->{time}) . ' seconds',
+                    response        => $opts{res}->as_string
+                }
+            );
+
+        }
+    );
+
 }
 
 1;

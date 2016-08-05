@@ -11,5 +11,16 @@ requires 'Type::Tiny';
 requires 'UUID::Tiny';
 requires 'Data::Validate::URI';
 
-requires 'Net::Async::HTTP';
-requires 'IO::Async::SSL';
+requires 'HTTP::Async';
+requires 'Net::HTTPS::NB';
+
+on test => sub {
+    requires 'JSON', '2.34';
+    requires 'Test::More', '0.96';
+
+    requires 'HTTP::Response';
+    requires 'Test::Fake::HTTPD';
+    requires 'LWP::UserAgent';
+    requires 'URL::Encode', '0.03';
+    requires 'Test::Pod';
+};
