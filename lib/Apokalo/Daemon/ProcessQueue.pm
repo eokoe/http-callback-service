@@ -174,7 +174,7 @@ sub _set_request_status {
 
             my $request_status =
               $self->_http_request_status_rs->update_or_create(
-                { done => $opts{res}->is_success ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
+                { done => $opts{res}->code =~ /^2/ ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
                 { http_request_id => $ref->{id} } );
 
             $self->_http_response_rs->create(
