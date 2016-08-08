@@ -1,7 +1,8 @@
 # HTTP callback service
 This service is a simple way to make http callback with automatic retry and scheduling.
 
-Speed is not a goal, because workers pull database each second, but all workers may be busy (can be solved by using some MQ and async http).
+Speed is not a primary goal, but it works using async http. It pull database 2 each seconds for new callbacks, or for callbacks that need rework.,
+When a new callback is inserted, the ĺoop get restarted and this event is pulled close to 1ms (using PostgreSQL Notify/Listen)
 
 It's intended to be used inside an secure network (as it does not have any authorization by now).
 
