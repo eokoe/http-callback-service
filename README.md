@@ -2,7 +2,7 @@
 This service is a simple way to make http callback with automatic retry and scheduling.
 
 Speed is not a primary goal, but it works using async http. It pull database 2 each seconds for new callbacks, or for callbacks that need rework.,
-When a new callback is inserted, the ĺoop get restarted and this event is pulled close to 1ms (using PostgreSQL Notify/Listen)
+When a new callback is detected, the ĺoop get restarted and this event is pulled close to 10ms (using PostgreSQL Notify/Listen), and have very low cpu utilization.
 
 It's intended to be used inside an secure network (as it does not have any authorization by now).
 
@@ -11,7 +11,7 @@ As a user, you may do an (guess what, http) request with, at least:
     method  = POST, GET, PUT or HEAD
     url     = http or https + host + (maybe a port) and path_query
 
-Return an HTTP 201 with header Location, where you can GET to check for success
+Return an HTTP 201 with header Location, where you can GET to check for verifying success
 
 ## Optional parameters
 
