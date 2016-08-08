@@ -8,8 +8,11 @@ use Apokalo::API::Object::HTTPRequest;
 use UUID::Tiny qw/is_uuid_string/;
 use HTTP::Async;
 use HTTP::Request;
+use Apokalo::TrapSignals;
 
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
+has 'logger' => ( is => 'rw', lazy => 1, builder => \&get_logger );
+
 has '_http_request_rs' => (
     is      => 'rw',
     builder => sub {
@@ -34,7 +37,7 @@ my $http_ids = {};
 has 'ahttp' => ( is => 'rw', lazy => 1, builder => '_build_http' );
 
 sub _build_http {
-    HTTP::Async->new;
+    HTTP::Async->new(timeout => 60, max_request_time => 120, slots => 100);
 }
 
 sub pending_jobs {
@@ -48,7 +51,7 @@ sub pending_jobs {
                     'http_request_status.done' => 0,
 
                     -and => [
-                        \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each) > now()'
+                        \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each) <= now()'
                     ],
 
                 }
@@ -86,13 +89,13 @@ sub run_once {
 
     my $async = $self->ahttp;
 
-    $self->_self_add($pending);
+    $self->_prepare_request($pending);
 
     if ( $async->not_empty ) {
         if ( my ( $response, $iid ) = $async->wait_for_next_response(30) ) {
 
             # deal with $response
-            $self->_mark_done( res => $response, ref => $http_ids->{$iid} );
+            $self->_set_request_status( res => $response, ref => delete $http_ids->{$iid} );
             return 1;
         }
         else {
@@ -103,10 +106,55 @@ sub run_once {
     return -2;
 }
 
-sub _self_add {
+sub listen_queue {
+    my ($self) = @_;
+
+    my $async  = $self->ahttp;
+    my $logger = $self->logger;
+    eval {
+        while (1) {
+
+            if ( $async->empty ) {
+                ON_TERM_EXIT;
+                EXIT_IF_ASKED;
+            }
+
+            ON_TERM_WAIT;
+
+            my @pendings = $self->pending_jobs( id_not_in => [ map { $http_ids->{$_}{id} } keys %{$http_ids} ] );
+
+            $self->_prepare_request($_) for @pendings;
+
+            if ( $async->not_empty ) {
+
+                while ( my ( $response, $iid ) = $async->next_response ) {
+
+                    my $ref =  delete $http_ids->{$iid};
+                    $self->logger->debug(join ' ', 'finished', $ref->{id}, 'with code', $response->code);
+
+                    # deal with $response
+                    $self->_set_request_status( res => $response, ref => $ref);
+
+                }
+            }
+            else {
+                ON_TERM_EXIT;
+                EXIT_IF_ASKED;
+            }
+
+            select undef, undef, undef, 0.1;
+        }
+    };
+
+    $logger->fatal("Fatal error: $@") if $@;
+}
+
+sub _prepare_request {
     my ( $self, $row ) = @_;
     my @headers = map { split /:\s+/, $_, 2 } split /\n/, $row->{headers};
     my $async = $self->ahttp;
+
+    $self->logger->debug(join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue');
 
     my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} ) );
     $http_ids->{$id}{id}   = $row->{id};
@@ -116,7 +164,7 @@ sub _self_add {
     return $id;
 }
 
-sub _mark_done {
+sub _set_request_status {
     my ( $self, %opts ) = @_;
 
     $self->schema->txn_do(
@@ -126,7 +174,7 @@ sub _mark_done {
 
             my $request_status =
               $self->_http_request_status_rs->update_or_create(
-                { done => $opts{res}->is_success, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
+                { done => $opts{res}->is_success ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
                 { http_request_id => $ref->{id} } );
 
             $self->_http_response_rs->create(
