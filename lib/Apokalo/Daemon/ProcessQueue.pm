@@ -37,7 +37,7 @@ my $http_ids = {};
 has 'ahttp' => ( is => 'rw', lazy => 1, builder => '_build_http' );
 
 sub _build_http {
-    HTTP::Async->new(timeout => 60, max_request_time => 120, slots => 100);
+    HTTP::Async->new( timeout => 60, max_request_time => 120, slots => 1000 );
 }
 
 sub pending_jobs {
@@ -65,7 +65,7 @@ sub pending_jobs {
 
         },
         {
-            rows => $opts{rows} ? $opts{rows} : 10,
+            rows => $opts{rows} ? $opts{rows} : 1000,
             join => 'http_request_status',
             'columns' => [
                 {
@@ -109,8 +109,11 @@ sub run_once {
 sub listen_queue {
     my ($self) = @_;
 
-    my $async  = $self->ahttp;
-    my $logger = $self->logger;
+    my $async      = $self->ahttp;
+    my $logger     = $self->logger;
+    my $loop_times = 0;
+    my $dbh        = $self->schema->storage->dbh;
+    $dbh->do("LISTEN newhttp");
     eval {
         while (1) {
 
@@ -120,20 +123,25 @@ sub listen_queue {
             }
 
             ON_TERM_WAIT;
+            while ( my $notify = $dbh->pg_notifies ) {
+                $loop_times = 0;
+            }
 
-            my @pendings = $self->pending_jobs( id_not_in => [ map { $http_ids->{$_}{id} } keys %{$http_ids} ] );
+            if ( $loop_times == 0 ) {
+                my @pendings = $self->pending_jobs( id_not_in => [ map { $http_ids->{$_}{id} } keys %{$http_ids} ] );
 
-            $self->_prepare_request($_) for @pendings;
+                $self->_prepare_request($_) for @pendings;
+            }
 
             if ( $async->not_empty ) {
 
                 while ( my ( $response, $iid ) = $async->next_response ) {
 
-                    my $ref =  delete $http_ids->{$iid};
-                    $self->logger->debug(join ' ', 'finished', $ref->{id}, 'with code', $response->code);
+                    my $ref = delete $http_ids->{$iid};
+                    $self->logger->debug( join ' ', 'finished', $ref->{id}, 'with code', $response->code );
 
                     # deal with $response
-                    $self->_set_request_status( res => $response, ref => $ref);
+                    $self->_set_request_status( res => $response, ref => $ref );
 
                 }
             }
@@ -142,7 +150,8 @@ sub listen_queue {
                 EXIT_IF_ASKED;
             }
 
-            select undef, undef, undef, 0.1;
+            select undef, undef, undef, 0.01;
+            $loop_times = 0 if ++$loop_times == 500;
         }
     };
 
@@ -154,7 +163,7 @@ sub _prepare_request {
     my @headers = map { split /:\s+/, $_, 2 } split /\n/, $row->{headers};
     my $async = $self->ahttp;
 
-    $self->logger->debug(join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue');
+    $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
 
     my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} ) );
     $http_ids->{$id}{id}   = $row->{id};
@@ -172,10 +181,10 @@ sub _set_request_status {
 
             my $ref = $opts{ref};
 
-            my $request_status =
-              $self->_http_request_status_rs->update_or_create(
+            my $request_status = $self->_http_request_status_rs->update_or_create(
                 { done => $opts{res}->code =~ /^2/ ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
-                { http_request_id => $ref->{id} } );
+                { http_request_id => $ref->{id} }
+            );
 
             $self->_http_response_rs->create(
                 {
