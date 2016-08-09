@@ -33,6 +33,32 @@ linux with curl:
     POST /schedule
     GET  /schedule/$UID
 
+    Both returns an JSON like:
+
+        {
+           "retry_each" : 15,
+           "id" : "c8bf9d56-3390-4859-8b8f-095432271a4a",
+           "http_response" : {
+              "response" : "200 OK\nCache-Control: private, max-age=0\nConnection: close\n......</html>\n",
+              "took" : 0.183862,
+              "created_at" : 1470752200
+           },
+           "headers" : null,
+           "retry_until" : 1471184190,
+           "retry_exp_base" : 2,
+           "created_at" : 1470752190,
+           "success" : 1,
+           "try_num" : 1,
+           "method" : "get",
+           "body" : null,
+           "url" : "http://google.com/",
+           "response_took" : 0,
+           "wait_until" : 1470752199
+        }
+
+        Please note that http_response may be null
+
+
 # Requirements
 
 - perl 5.16 and newer
