@@ -52,6 +52,7 @@ __PACKAGE__->table("http_request_status");
 
   data_type: 'smallint'
   default_value: 1
+  is_foreign_key: 1
   is_nullable: 0
 
 =cut
@@ -62,7 +63,12 @@ __PACKAGE__->add_columns(
   "done",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "try_num",
-  { data_type => "smallint", default_value => 1, is_nullable => 0 },
+  {
+    data_type      => "smallint",
+    default_value  => 1,
+    is_foreign_key => 1,
+    is_nullable    => 0,
+  },
 );
 
 =head1 PRIMARY KEY
@@ -94,9 +100,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
+=head2 http_response
 
-# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-23 22:55:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fiOkc/AEqrdX3rGZSyaArA
+Type: belongs_to
+
+Related object: L<Apokalo::Schema::Result::HttpResponse>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "http_response",
+  "Apokalo::Schema::Result::HttpResponse",
+  { http_request_id => "http_request_id", try_num => "try_num" },
+  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-08-09 11:02:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:EY9pV0XXXkg43nDlfilY4Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

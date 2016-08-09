@@ -5,8 +5,11 @@
 # $ HTTP_CB_ENV_FILE=deploy/envs_local.sh deploy/restart_services.sh
 export GIT_DIR=$(git rev-parse --show-toplevel)
 
-export PERLBREW_ROOT=/opt/perlbrew
-source ${PERLBREW_ROOT}/etc/bashrc
+#export PERLBREW_ROOT=/opt/perlbrew
+#source ${PERLBREW_ROOT}/etc/bashrc
+
+# perlbrew guy?
+source ~/perl5/perlbrew/etc/bashrc
 
 # log directory
 export HTTP_CB_LOG_DIR=$HOME/http-callback-logs
@@ -23,3 +26,6 @@ export HTTP_CB_DB_PASS=no
 export HTTP_CB_DB_PORT=5432
 export HTTP_CB_DB_USER=postgres
 export HTTP_CB_DB_NAME=httpcallback_dev
+
+export HTTP_CB_API_WORKERS=2
+export HTTP_CB_SQITCH_DEPLOY_NAME=local

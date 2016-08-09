@@ -121,9 +121,27 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
+=head2 http_request_statuses
 
-# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-06-23 22:55:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nPdkuGwxh+S3h5ZH+6842g
+Type: has_many
+
+Related object: L<Apokalo::Schema::Result::HttpRequestStatus>
+
+=cut
+
+__PACKAGE__->has_many(
+  "http_request_statuses",
+  "Apokalo::Schema::Result::HttpRequestStatus",
+  {
+    "foreign.http_request_id" => "self.http_request_id",
+    "foreign.try_num"         => "self.try_num",
+  },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07043 @ 2016-08-09 11:02:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:EM+qTVN+w6giSRKcT11SPg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

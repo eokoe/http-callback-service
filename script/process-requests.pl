@@ -1,10 +1,11 @@
-#!/usr/bin/perl
-
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use utf8;
 
-use lib 'lib';
+
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
 use Apokalo::SchemaConnected;
 use Apokalo::Daemon::ProcessQueue;
 use DDP;

@@ -9,3 +9,4 @@
 0004-fix-mult [0003-multiplier] 2016-06-24T06:55:11Z renato,,, <renato@renato-Inspiron-5420> # multi
 0005-retry_multiplier [0004-fix-mult] 2016-06-25T07:58:05Z renato,,, <renato@renato-Inspiron-5420> # retry_exp_base
 0006-triggernotify [0005-retry_multiplier] 2016-08-08T17:11:50Z renatopc,,, <renato@oodcronpc> # make a trigger to notify for new https
+0007-new-rel [0006-triggernotify] 2016-08-09T14:01:37Z renatopc,,, <renato@oodcronpc> # new-rel
