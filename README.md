@@ -116,4 +116,3 @@ Slower, but does not need forkprove
 - authorization
 - way to configure when to delete requests from database
 - .deb install?
-- Use HTTP::Async instead of forks?
