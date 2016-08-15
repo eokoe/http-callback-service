@@ -51,7 +51,7 @@ sub pending_jobs {
                     'http_request_status.done' => 0,
 
                     -and => [
-                        \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * retry_each) <= now()'
+                        \' wait_until + ( retry_exp_base ^ LEAST(http_request_status.try_num, 10) * (retry_each * coalesce(http_request_status.try_num, 0))) <= now()'
                     ],
 
                 }
@@ -160,7 +160,7 @@ sub listen_queue {
 
 sub _prepare_request {
     my ( $self, $row ) = @_;
-    my @headers = map { split /:\s+/, $_, 2 } split /\n/, $row->{headers};
+    my @headers = $row->{headers} ? (map { split /:\s+/, $_, 2 } split /\n/, $row->{headers}) : ();
     my $async = $self->ahttp;
 
     $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
