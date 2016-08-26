@@ -14,7 +14,7 @@ requires 'Starman';
 requires 'Server::Starter';
 requires 'Net::Server::SS::PreFork';
 requires 'HTTP::Async';
-requires 'Net::HTTPS::NB';
+requires 'Net::HTTPS::NB', 0.15;
 requires 'Daemon::Control';
 
 on test => sub {
