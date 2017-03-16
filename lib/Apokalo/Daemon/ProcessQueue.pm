@@ -113,6 +113,8 @@ sub listen_queue {
     my $logger     = $self->logger;
     my $loop_times = 0;
     my $dbh        = $self->schema->storage->dbh;
+
+    $logger->info("LISTEN newhttp");
     $dbh->do("LISTEN newhttp");
     eval {
         while (1) {
@@ -160,7 +162,7 @@ sub listen_queue {
 
 sub _prepare_request {
     my ( $self, $row ) = @_;
-    my @headers = $row->{headers} ? (map { split /:\s+/, $_, 2 } split /\n/, $row->{headers}) : ();
+    my @headers = $row->{headers} ? ( map { split /:\s+/, $_, 2 } split /\n/, $row->{headers} ) : ();
     my $async = $self->ahttp;
 
     $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
@@ -180,7 +182,6 @@ sub _set_request_status {
         sub {
 
             my $ref = $opts{ref};
-
 
             $self->_http_response_rs->create(
                 {
