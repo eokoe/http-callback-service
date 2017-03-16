@@ -14,9 +14,8 @@ else
     HTTP_CB_ENV_FILE=deploy/envs.sh ./deploy/restart_services.sh
 fi
 
-if ps -ef | grep process-requests | grep -v 'grep'; then
-    HTTP_CB_ENV_FILE=deploy/envs.sh ./deploy/restart_services.sh
-else
-    echo "process-requests is running"
-fi
+
+cd $HTTP_CB_APP_DIR/script
+# WOKRERS
+./process-requests start
 
