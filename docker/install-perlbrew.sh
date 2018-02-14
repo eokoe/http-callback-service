@@ -3,7 +3,8 @@
 
 export USER=app
 
-curl -L http://xrl.us/perlbrewinstall | bash;
+cd /tmp
+curl -L https://install.perlbrew.pl | bash;
 echo 'source /home/app/perl5/perlbrew/etc/bashrc' >> /home/app/.bashrc;
 
 source /home/app/perl5/perlbrew/etc/bashrc
