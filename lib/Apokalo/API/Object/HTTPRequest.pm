@@ -23,7 +23,7 @@ my $PositiveInt = declare
 my $HTTP_HEADER_STR = declare as Str, where {
     my @lines = split /\n/, $_;
     my $fail = 0;
-    for (@lines) { next unless $_; $fail++ unless $_ =~ /^[^:]+:.+$/o }
+    for (@lines) { next unless $_; $fail++ unless $_ =~ /^[^:]+: .+$/o }
     return !$fail;
 };
 
