@@ -112,7 +112,19 @@ sub listen_queue {
     my $async      = $self->ahttp;
     my $logger     = $self->logger;
     my $loop_times = 0;
-    my $dbh        = $self->schema->storage->dbh;
+
+    # poll db each 50 ms
+    my $sleep = $ENV{HTTP_CB_MIN_POLL_INTERVAL} || 0.05;
+
+    # default to 5 seconds
+    my $loops_before_rework = ( $ENV{HTTP_CB_REWORK_INTERVAL} || 5 );
+
+    $loops_before_rework = 1    if $loops_before_rework < 1;
+    $sleep               = 0.01 if $sleep < 0.01;
+
+    $loops_before_rework = $loops_before_rework / $sleep;
+
+    my $dbh = $self->schema->storage->dbh;
 
     $logger->info("LISTEN newhttp");
     $dbh->do("LISTEN newhttp");
@@ -152,7 +164,7 @@ sub listen_queue {
                 EXIT_IF_ASKED;
             }
 
-            select undef, undef, undef, 0.01;
+            select undef, undef, undef, $sleep;
             $loop_times = 0 if ++$loop_times == 500;
         }
     };

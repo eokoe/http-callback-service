@@ -97,6 +97,17 @@ If you need change database settings, edit on sqitch.conf
 
 > When HTTP_CB_DB_* is changed, you will need to run `fuser $HTTP_CB_API_PORT/tcp -k`. This is not gracefully, but needed as the server_starter fork don't get fresh ENV before starting the new code.
 
+
+# Envs
+
+`HTTP_CB_MIN_POLL_INTERVAL` - (seconds) time for sleep before polling database (`$dbh->pg_notifies`) and http responses (`$async->next_response`)
+
+Defaults 0.05. Min 0.01
+
+`HTTP_CB_REWORK_INTERVAL` - (seconds) wait time before issuing a query to ask for peding requests.
+
+Default 5. Min 1
+
 ## Running tests
 
 As fast as possible, hard to read output.
