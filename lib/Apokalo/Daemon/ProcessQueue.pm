@@ -169,7 +169,7 @@ sub listen_queue {
         }
     };
 
-    $logger->fatal("Fatal error: $@") if $@;
+    $logger->logconfess("Fatal error: $@") if $@;
 }
 
 sub _prepare_request {
