@@ -3,7 +3,6 @@ use Moo;
 use utf8;
 use Apokalo::SchemaConnected;
 use Apokalo::Logger;
-use DateTime;
 use Apokalo::API::Object::HTTPRequest;
 use UUID::Tiny qw/is_uuid_string/;
 
@@ -25,15 +24,13 @@ sub add {
             ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
             ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base )          : () ),
 
-            (
-                $obj->retry_until ? ( retry_until => DateTime->from_epoch( epoch => $obj->retry_until )->datetime ) : ()
-            ),
-            ( $obj->wait_until ? ( wait_until => DateTime->from_epoch( epoch => $obj->wait_until )->datetime ) : () ),
+            ( $obj->retry_until ? ( retry_until => \[ 'to_timestamp(?)', $obj->retry_until ] ) : () ),
+            ( $obj->wait_until ? ( wait_until => \[ 'to_timestamp(?)',, $obj->wait_until ] ) : () ),
 
         }
     );
 
-    return $self->get( id => $row->id );
+    return { id => $row->id };
 }
 
 sub get {

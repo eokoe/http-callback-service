@@ -31,9 +31,17 @@ linux with curl:
 # Endpoints
 
     POST /schedule
+
+    returns JSON:
+
+        {
+           "id" : "c8bf9d56-3390-4859-8b8f-095432271a4a",
+        }
+
+
     GET  /schedule/$UID
 
-    Both returns an JSON like:
+    returns JSON:
 
         {
            "retry_each" : 15,
