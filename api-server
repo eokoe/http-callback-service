@@ -27,7 +27,12 @@ post '/schedule' => sub {
         $ret = { error => $err_msg };
     }
 
-    $c->render(json => encode_json($ret));
+    $c->redirect_to($c->url_for('/schedule/' . $ret->{id})) if $code == 201;
+
+    $c->render(
+        json   => encode_json($ret),
+        status => $code,
+    );
 };
 
 app->start;
