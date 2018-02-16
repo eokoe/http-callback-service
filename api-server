@@ -1,0 +1,34 @@
+#!/usr/bin/env perl
+use common::sense;
+use FindBin qw($RealBin);
+use lib "$RealBin/lib";
+
+use Mojolicious::Lite;
+use JSON;
+use Apokalo::API::Schedule;
+use Data::Printer;
+
+our $api = Apokalo::API::Schedule->new;
+
+post '/schedule' => sub {
+    my $c = shift;
+
+    my $query_params = $c->req->query_params->to_hash;
+
+    my $code = 201;
+    my $ret = eval { $api->add(%{ $query_params }) };
+    if ($@) {
+        $code = 400;
+        my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
+        chomp $err_msg;
+        $err_msg =~ s/ at .+//;
+        $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
+
+        $ret = { error => $err_msg };
+    }
+
+    $c->render(json => encode_json($ret));
+};
+
+app->start;
+
