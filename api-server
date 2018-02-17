@@ -3,7 +3,6 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
-use JSON;
 use Apokalo::API::Schedule;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
@@ -34,7 +33,7 @@ post '/schedule' => sub {
     }
 
     $c->redirect_to( $c->url_for( 'scheduleid', id => $ret->{id}  )) if $code == 201;
-    $c->render( json => encode_json($ret), status => $code );
+    $c->render( json => $ret, status => $code );
 };
 
 post '/schedule/bulk' => sub {
@@ -56,7 +55,7 @@ post '/schedule/bulk' => sub {
         $ret = { error => $err_msg };
     }
 
-    $c->render( json => encode_json( { ids => $ret } ), status => $code );
+    $c->render( json => { id => $ret }, status => $code );
 };
 
 get '/schedule/:id' => sub {
@@ -74,10 +73,10 @@ get '/schedule/:id' => sub {
         $ret = { error => $err_msg };
     }
 
-    return $c->render( json => encode_json( { error => 'Object not found' } ), status => 404 )
+    return $c->render( json => { error => 'Object not found' }, status => 404 )
       unless $ret;
 
-    $c->render( json => encode_json($ret), status => $code );
+    $c->render( json => $ret, status => $code );
 };
 
 get '/schedule/*' => sub {
@@ -89,7 +88,7 @@ get '/schedule/*' => sub {
 any '/(*)' => sub {
     my $c = shift;
 
-    $c->render( json => encode_json( { error => 'Page not found' } ), status => 404 );
+    $c->render( json => { error => 'Page not found' }, status => 404 );
 };
 
 app->max_request_size(16777216);
