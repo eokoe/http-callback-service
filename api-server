@@ -1,12 +1,10 @@
 #!/usr/bin/env perl
-use common::sense;
 use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
 use JSON;
 use Apokalo::API::Schedule;
-use Data::Printer;
 
 our $api = Apokalo::API::Schedule->new;
 
