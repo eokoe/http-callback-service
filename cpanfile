@@ -16,6 +16,7 @@ requires 'Net::Server::SS::PreFork';
 requires 'HTTP::Async';
 requires 'Net::HTTPS::NB', 0.15;
 requires 'Daemon::Control';
+requires 'Mojolicious';
 
 on test => sub {
     requires 'JSON', '2.34';
