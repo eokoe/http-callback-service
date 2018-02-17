@@ -33,6 +33,28 @@ sub add {
     return { id => $row->id };
 }
 
+sub add_bulk {
+    my ($self, @items) = @_;
+
+    my @results = $self->_http_request_rs->populate([
+        map {
+            my %opts = %{ $_ };
+            my $obj  = Apokalo::API::Object::HTTPRequest->new(%opts);
+
+            +{
+                ( map { $_ => $obj->$_ } qw/method headers body url/ ),
+                ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
+                ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base          ) : () ),
+
+                ( $obj->retry_until ? ( retry_until => \[ 'TO_TIMESTAMP(?)', $obj->retry_until ] ) : () ),
+                ( $obj->wait_until  ? ( wait_until  => \[ 'TO_TIMESTAMP(?)', $obj->wait_until ] )  : () ),
+            }
+        } @items
+    ]);
+
+    return [ map { $_->id } @results ];
+}
+
 sub get {
     my ( $self, %opts ) = @_;
     die "Value \"{$opts{id}}\" did not pass UUID constraint\n" unless is_uuid_string $opts{id};

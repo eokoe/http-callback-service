@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
+use Mojolicious::Lite;
+
 use FindBin qw($RealBin);
 use lib "$RealBin/lib";
-
-use Mojolicious::Lite;
-use JSON;
 use Apokalo::API::Schedule;
+
+use JSON;
+
+use Data::Printer;
 
 our $api = Apokalo::API::Schedule->new;
 
@@ -31,6 +34,28 @@ post '/schedule' => sub {
         json   => encode_json($ret),
         status => $code,
     );
+};
+
+post '/schedule/bulk' => sub {
+    my $c = shift;
+
+    my $body_params = $c->req->json;
+    return $c->render( json => {error => "body is not array"}, status => 400 )
+      unless ref $body_params eq 'ARRAY';
+
+    my $code = 200;
+    my $ret  = eval { $api->add_bulk(@{ $body_params }) };
+    if ($@) {
+        $code = 400;
+        my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
+        chomp $err_msg;
+        $err_msg =~ s/ at .+//;
+        $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
+
+        $ret = { error => $err_msg };
+    }
+
+    $c->render( json => encode_json({ ids => $ret }), status => $code );
 };
 
 get '/schedule/:id' => sub {
