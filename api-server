@@ -1,13 +1,10 @@
 #!/usr/bin/env perl
-use Mojolicious::Lite;
-
 use FindBin qw($RealBin);
 use lib "$RealBin/lib";
-use Apokalo::API::Schedule;
 
+use Mojolicious::Lite;
 use JSON;
-
-use Data::Printer;
+use Apokalo::API::Schedule;
 
 our $api = Apokalo::API::Schedule->new;
 
@@ -17,17 +14,15 @@ my $HTTP_CB_API_PORT    = int($ENV{HTTP_CB_API_PORT})    || 2626;
 app->config(
     hypnotoad => {
         listen  => [ "http://*:$HTTP_CB_API_PORT" ],
-        workers => $HTTP_CB_API_WORKERS,,
+        workers => $HTTP_CB_API_WORKERS,
     },
 );
 
 post '/schedule' => sub {
     my $c = shift;
 
-    my $query_params = $c->req->query_params->to_hash;
-
     my $code = 201;
-    my $ret = eval { $api->add(%{ $query_params }) };
+    my $ret = eval { $api->add(%{ $c->req->query_params->to_hash }) };
     if ($@) {
         $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
@@ -39,11 +34,7 @@ post '/schedule' => sub {
     }
 
     $c->redirect_to($c->url_for('/schedule/' . $ret->{id})) if $code == 201;
-
-    $c->render(
-        json   => encode_json($ret),
-        status => $code,
-    );
+    $c->render( json => encode_json($ret), status => $code );
 };
 
 post '/schedule/bulk' => sub {
@@ -65,7 +56,7 @@ post '/schedule/bulk' => sub {
         $ret = { error => $err_msg };
     }
 
-    $c->render( json => encode_json({ ids => $ret }), status => $code );
+    $c->render( json => encode_json( { ids => $ret } ), status => $code );
 };
 
 get '/schedule/:id' => sub {
@@ -83,7 +74,7 @@ get '/schedule/:id' => sub {
         $ret = { error => $err_msg };
     }
 
-    return $c->render( json => encode_json( {error => 'Object not found'} ), status => 404 )
+    return $c->render( json => encode_json( { error => 'Object not found' } ), status => 404 )
       unless $ret;
 
     $c->render( json => encode_json($ret), status => $code );
@@ -98,7 +89,7 @@ get '/schedule/*' => sub {
 any '/(*)' => sub {
     my $c = shift;
 
-    $c->render( json => encode_json( {error => 'Page not found'} ), status => 404 );
+    $c->render( json => encode_json( { error => 'Page not found' } ), status => 404 );
 };
 
 app->max_request_size(16777216);
