@@ -53,7 +53,13 @@ get '/schedule/:id' => sub {
     return $c->render(json => encode_json( {error => 'Object not found'} ), status => 404)
       if !$ret;
 
-    return $c->render(json => encode_json($ret), status => $code);
+    $c->render(json => encode_json($ret), status => $code);
+};
+
+get '/schedule/*' => sub {
+    my $c = shift;
+
+    $c->render( json => { error => 'Method not allowed' }, status => 405 );
 };
 
 app->max_request_size(16777216);
