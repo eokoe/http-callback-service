@@ -35,5 +35,26 @@ post '/schedule' => sub {
     );
 };
 
+get '/schedule/:id' => sub {
+    my $c = shift;
+
+    my $code = 200;
+    my $ret = eval { $api->get( id => $c->param('id') ) };
+    if ($@) {
+        $code = 400;
+        my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
+        chomp $err_msg;
+        $err_msg =~ s/ at .+//;
+        $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
+
+        $ret = { error => $err_msg };
+    }
+
+    return $c->render(json => encode_json( {error => 'Object not found'} ), status => 404)
+      if !$ret;
+
+    return $c->render(json => encode_json($ret), status => $code);
+};
+
 app->start;
 
