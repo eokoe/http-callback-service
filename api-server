@@ -6,10 +6,8 @@ use Mojolicious::Lite;
 use JSON;
 use Apokalo::API::Schedule;
 
-our $api = Apokalo::API::Schedule->new;
-
-my $HTTP_CB_API_WORKERS = int($ENV{HTTP_CB_API_WORKERS}) || 4;
-my $HTTP_CB_API_PORT    = int($ENV{HTTP_CB_API_PORT})    || 2626;
+my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
+my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 2626;
 
 app->config(
     hypnotoad => {
@@ -18,11 +16,13 @@ app->config(
     },
 );
 
+helper 'api' => sub { state $api = Apokalo::API::Schedule->new };
+
 post '/schedule' => sub {
     my $c = shift;
 
     my $code = 201;
-    my $ret = eval { $api->add(%{ $c->req->query_params->to_hash }) };
+    my $ret = eval { $c->api->add(%{ $c->req->query_params->to_hash }) };
     if ($@) {
         $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
@@ -45,7 +45,7 @@ post '/schedule/bulk' => sub {
       unless ref $body_params eq 'ARRAY';
 
     my $code = 200;
-    my $ret  = eval { $api->add_bulk(@{ $body_params }) };
+    my $ret  = eval { $c->api->add_bulk(@{ $body_params }) };
     if ($@) {
         $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
@@ -63,7 +63,7 @@ get '/schedule/:id' => sub {
     my $c = shift;
 
     my $code = 200;
-    my $ret = eval { $api->get( id => $c->param('id') ) };
+    my $ret = eval { $c->api->get( id => $c->param('id') ) };
     if ($@) {
         $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
