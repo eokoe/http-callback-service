@@ -11,6 +11,16 @@ use Data::Printer;
 
 our $api = Apokalo::API::Schedule->new;
 
+my $HTTP_CB_API_WORKERS = int($ENV{HTTP_CB_API_WORKERS}) || 4;
+my $HTTP_CB_API_PORT    = int($ENV{HTTP_CB_API_PORT})    || 2626;
+
+app->config(
+    hypnotoad => {
+        listen  => [ "http://*:$HTTP_CB_API_PORT" ],
+        workers => $HTTP_CB_API_WORKERS,,
+    },
+);
+
 post '/schedule' => sub {
     my $c = shift;
 
