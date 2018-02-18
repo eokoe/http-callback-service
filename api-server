@@ -3,10 +3,12 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
+use Mojo::JSON::XS;
 use Apokalo::API::Schedule;
+use JSON::XS;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
-my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 2626;
+my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 5000;
 
 app->config(
     hypnotoad => {
@@ -33,7 +35,7 @@ post '/schedule' => sub {
     }
 
     $c->redirect_to( $c->url_for( 'scheduleid', id => $ret->{id}  )) if $code == 201;
-    $c->render( json => $ret, status => $code );
+    $c->render( json => encode_json($ret), status => $code );
 };
 
 post '/schedule/bulk' => sub {
