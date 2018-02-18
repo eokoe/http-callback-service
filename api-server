@@ -3,6 +3,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
+use Mojo::Pg;
 use Apokalo::API::Schedule;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
@@ -17,23 +18,59 @@ app->config(
 
 helper 'api' => sub { state $api = Apokalo::API::Schedule->new };
 
+helper 'pg' => sub {
+    my $host = $ENV{HTTP_CB_DB_HOST} || 'localhost';
+    my $pass = $ENV{HTTP_CB_DB_PASS} || 'no-password';
+    my $port = $ENV{HTTP_CB_DB_PORT} || '5432';
+    my $user = $ENV{HTTP_CB_DB_USER} || 'postgres';
+    my $name = $ENV{HTTP_CB_DB_NAME} || 'httpcallback_dev';
+
+    #state $pg = Mojo::Pg->new( join( ' ', 'postgresql://', $user, ':', $pass, '@', $host, '/', $name ) );
+    state $pg = Mojo::Pg->new( 'postgresql://postgres@/' . $name );
+    $pg->max_connections($HTTP_CB_API_WORKERS);
+    return $pg;
+};
+
 post '/schedule' => sub {
     my $c = shift;
 
-    my $code = 201;
-    my $ret = eval { $c->api->add(%{ $c->req->query_params->to_hash }) };
+    eval {
+        my $obj = Apokalo::API::Object::HTTPRequest->new(%{ $c->req->query_params->to_hash });
+
+        $c->pg->db->insert_p(
+            'http_request',
+            {
+                ( map { $_ => $obj->$_ } qw/method headers body url/ ),
+                ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
+                ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base )          : () ),
+
+                ( $obj->retry_until ? ( retry_until => \[ 'to_timestamp(?)', $obj->retry_until ] ) : () ),
+                ( $obj->wait_until  ? ( wait_until => \[ 'to_timestamp(?)',, $obj->wait_until ] )  : () ),
+
+            },
+            { returning => 'id' },
+        )
+        ->then(sub {
+            my $results = shift;
+
+            my $ret = $results->hash;
+
+            $c->res->headers->append(location => $c->url_for( 'scheduleid', id => $ret->{id} ) );
+            $c->render( json => $ret, status => 201 );
+        })
+        ->catch(sub { die $_[0] })
+        ->wait;
+    };
     if ($@) {
-        $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
         chomp $err_msg;
         $err_msg =~ s/ at .+//;
         $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
 
-        $ret = { error => $err_msg };
+        $c->render( json => { error => $err_msg }, status => 400 );
     }
 
-    $c->redirect_to( $c->url_for( 'scheduleid', id => $ret->{id}  )) if $code == 201;
-    $c->render( json => $ret, status => $code );
+    return $c->render_later;
 };
 
 post '/schedule/bulk' => sub {
