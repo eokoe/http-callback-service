@@ -13,6 +13,7 @@ app->config(
     hypnotoad => {
         listen  => [ "http://*:$HTTP_CB_API_PORT" ],
         workers => $HTTP_CB_API_WORKERS,
+        clients => 1000,
     },
 );
 
@@ -58,8 +59,7 @@ post '/schedule' => sub {
             $c->res->headers->append(location => $c->url_for( 'scheduleid', id => $ret->{id} ) );
             $c->render( json => $ret, status => 201 );
         })
-        ->catch(sub { die $_[0] })
-        ->wait;
+        ->catch(sub { die $_[0] })->wait;
     };
     if ($@) {
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
