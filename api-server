@@ -3,7 +3,6 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
-use Mojo::JSON::XS;
 use Apokalo::API::Schedule;
 use JSON::XS;
 
