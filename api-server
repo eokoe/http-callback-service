@@ -5,6 +5,7 @@ use lib "$RealBin/lib";
 use Mojolicious::Lite;
 use Mojo::Pg;
 use Apokalo::API::Schedule;
+use Apokalo::API::Object::HTTPRequest;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
 my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 5000;
@@ -17,8 +18,6 @@ app->config(
     },
 );
 
-helper 'api' => sub { state $api = Apokalo::API::Schedule->new };
-
 helper 'pg' => sub {
     my $host = $ENV{HTTP_CB_DB_HOST} || 'localhost';
     my $pass = $ENV{HTTP_CB_DB_PASS} || 'no-password';
@@ -26,11 +25,12 @@ helper 'pg' => sub {
     my $user = $ENV{HTTP_CB_DB_USER} || 'postgres';
     my $name = $ENV{HTTP_CB_DB_NAME} || 'httpcallback_dev';
 
-    #state $pg = Mojo::Pg->new( join( ' ', 'postgresql://', $user, ':', $pass, '@', $host, '/', $name ) );
     state $pg = Mojo::Pg->new( 'postgresql://postgres@/' . $name );
     $pg->max_connections($HTTP_CB_API_WORKERS);
     return $pg;
 };
+
+helper 'api' => sub { Apokalo::API::Schedule->new };
 
 post '/schedule' => sub {
     my $c = shift;
@@ -59,7 +59,8 @@ post '/schedule' => sub {
             $c->res->headers->append(location => $c->url_for( 'scheduleid', id => $ret->{id} ) );
             $c->render( json => $ret, status => 201 );
         })
-        ->catch(sub { die $_[0] })->wait;
+        ->catch(sub { die $_[0] })
+        ->wait;
     };
     if ($@) {
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
@@ -98,22 +99,68 @@ post '/schedule/bulk' => sub {
 get '/schedule/:id' => sub {
     my $c = shift;
 
-    my $code = 200;
-    my $ret = eval { $c->api->get( id => $c->param('id') ) };
-    if ($@) {
-        $code = 400;
-        my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
+    $c->pg->db->select_p(
+        [
+            'http_request',
+            [ '-left' => 'http_request_status', http_request_id => 'id' ],
+            [ '-left' => 'http_response', http_request_id => 'id' ],
+        ],
+        [
+            ( map { [ "http_request.$_"        => $_ ] } qw/ body headers id method retry_exp_base url / ),
+            ( map { [ "http_response.$_"       => "http_response_$_" ] } qw/ created_at response try_num / ),
+            ( map { [ "http_request_status.$_" => "http_request_status_$_" ] } qw/ done try_num / ),
+
+            [ \"EXTRACT(EPOCH FROM http_response.took)::numeric" => 'response_took' ],
+            [ \"EXTRACT(EPOCH FROM wait_until)::int"  => 'wait_until'  ],
+            [ \"EXTRACT(EPOCH FROM retry_each)::int"  => 'retry_each'  ],
+            [ \"EXTRACT(EPOCH FROM retry_until)::int" => 'retry_until' ],
+            [ \"EXTRACT(EPOCH FROM http_request.created_at)::int"  => 'http_request_created_at' ],
+            [ \"EXTRACT(EPOCH FROM http_response.created_at)::int" => 'http_response_created_at' ],
+        ],
+        { 'http_request.id' => $c->param('id') }
+    )
+    ->then(sub {
+        my $results = shift;
+
+        my $row = $results->hash;
+        $row->{http_response} = {
+            map {
+                my $k = $_;
+                s/^http_response_//;
+                $_ => delete $row->{$k};
+            }
+            grep { /^http_response_/ } keys %{ $row } }
+        ;
+
+        $row->{http_request_status} = {
+            map {
+                my $v = delete $row->{$_};
+                s/^http_request_status_//;
+                $_ => $v
+            }
+            grep { /^http_request_status_/ } keys %{ $row } }
+        ;
+
+        $row->{$_} += 0 for qw/wait_until created_at response_took success try_num retry_each retry_until retry_exp_base/;
+        if ( $row->{http_response} ) {
+            $row->{http_response}{$_} += 0 for qw/created_at took/;
+        }
+
+        $c->render( json => $row, status => 200 );
+    })
+    ->catch(sub {
+        my $err = shift;
+
+        my $err_msg = ref $err eq 'Error::TypeTiny::Assertion' ? $err->message : "$err";
         chomp $err_msg;
         $err_msg =~ s/ at .+//;
         $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
 
-        $ret = { error => $err_msg };
-    }
+        $c->render( json => { error => $err_msg }, status => 400 );
+    })
+    ->wait;
 
-    return $c->render( json => { error => 'Object not found' }, status => 404 )
-      unless $ret;
-
-    $c->render( json => $ret, status => $code );
+    return $c->render_later;
 };
 
 get '/schedule/*' => sub {
