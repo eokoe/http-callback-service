@@ -3,82 +3,45 @@ use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
 use Mojolicious::Lite;
-use Mojo::Pg;
 use Apokalo::API::Schedule;
-use Apokalo::API::Object::HTTPRequest;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
-my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 5000;
+my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 2626;
 
 app->config(
     hypnotoad => {
         listen  => [ "http://*:$HTTP_CB_API_PORT" ],
         workers => $HTTP_CB_API_WORKERS,
-        clients => 1000,
     },
 );
 
-helper 'pg' => sub {
-    my $host = $ENV{HTTP_CB_DB_HOST} || 'localhost';
-    my $pass = $ENV{HTTP_CB_DB_PASS} || 'no-password';
-    my $port = $ENV{HTTP_CB_DB_PORT} || '5432';
-    my $user = $ENV{HTTP_CB_DB_USER} || 'postgres';
-    my $name = $ENV{HTTP_CB_DB_NAME} || 'httpcallback_dev';
-
-    state $pg = Mojo::Pg->new( 'postgresql://postgres@/' . $name );
-    $pg->max_connections($HTTP_CB_API_WORKERS);
-    return $pg;
-};
-
-helper 'api' => sub { Apokalo::API::Schedule->new };
+helper 'api' => sub { state $api = Apokalo::API::Schedule->new };
 
 post '/schedule' => sub {
     my $c = shift;
 
-    eval {
-        my $obj = Apokalo::API::Object::HTTPRequest->new(%{ $c->req->query_params->to_hash });
-
-        $c->pg->db->insert_p(
-            'http_request',
-            {
-                ( map { $_ => $obj->$_ } qw/method headers body url/ ),
-                ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
-                ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base )          : () ),
-
-                ( $obj->retry_until ? ( retry_until => \[ 'to_timestamp(?)', $obj->retry_until ] ) : () ),
-                ( $obj->wait_until  ? ( wait_until => \[ 'to_timestamp(?)',, $obj->wait_until ] )  : () ),
-
-            },
-            { returning => 'id' },
-        )
-        ->then(sub {
-            my $results = shift;
-
-            my $ret = $results->hash;
-
-            $c->res->headers->append(location => $c->url_for( 'scheduleid', id => $ret->{id} ) );
-            $c->render( json => $ret, status => 201 );
-        })
-        ->catch(sub { die $_[0] })
-        ->wait;
-    };
+    my $code = 201;
+    my $ret = eval { $c->api->add(%{ $c->req->query_params->to_hash }) };
     if ($@) {
+        $code = 400;
         my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
         chomp $err_msg;
         $err_msg =~ s/ at .+//;
         $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
 
-        $c->render( json => { error => $err_msg }, status => 400 );
+        $ret = { error => $err_msg };
     }
 
-    return $c->render_later;
+    $c->redirect_to( $c->url_for( 'scheduleid', id => $ret->{id}  )) if $code == 201;
+    $c->render( json => $ret, status => $code );
 };
 
 post '/schedule/bulk' => sub {
     my $c = shift;
 
     my $body_params = $c->req->json;
-    return $c->render( json => {error => "body is not array"}, status => 400 )
+
+    return $c->render( json => { error => "body is not array" }, status => 400 )
       unless ref $body_params eq 'ARRAY';
 
     my $code = 200;
@@ -99,54 +62,22 @@ post '/schedule/bulk' => sub {
 get '/schedule/:id' => sub {
     my $c = shift;
 
-    $c->pg->db->select_p(
-        [
-            'http_request',
-            [ '-left' => 'http_request_status', http_request_id => 'id' ],
-            [ '-left' => 'http_response', http_request_id => 'id' ],
-        ],
-        [
-            ( map { [ "http_request.$_"        => $_ ] } qw/ body headers id method retry_exp_base url / ),
-            ( map { [ "http_response.$_"       => "http_response_$_" ] } qw/ created_at response / ),
-
-            [ \"EXTRACT(EPOCH FROM http_response.took)::numeric" => 'http_response_took' ],
-            [ \"EXTRACT(EPOCH FROM wait_until)::int"  => 'wait_until'  ],
-            [ \"EXTRACT(EPOCH FROM retry_each)::int"  => 'retry_each'  ],
-            [ \"EXTRACT(EPOCH FROM retry_until)::int" => 'retry_until' ],
-            [ \"EXTRACT(EPOCH FROM http_request.created_at)::int"  => 'created_at' ],
-            [ \"EXTRACT(EPOCH FROM http_response.created_at)::int" => 'http_response_created_at' ],
-
-            [ \'CASE WHEN (http_request_status.done) THEN TRUE ELSE FALSE END' => 'success' ],
-            [ \'CASE WHEN (http_request_status.try_num IS NULL) THEN  0 ELSE http_request_status.try_num END' => 'try_num' ],
-        ],
-        { 'http_request.id' => $c->param('id') }
-    )
-    ->then(sub {
-        my $results = shift;
-
-        my $row = $results->hash;
-
-        # Organizando as colunas.
-        $row->{http_response} = {
-            map { my $v = delete $row->{$_}; s/^http_response_//; $_ => $v }
-              grep { /^http_response_/ } keys %{ $row }
-        };
-
-        $c->render( json => $row, status => 200 );
-    })
-    ->catch(sub {
-        my $err = shift;
-
-        my $err_msg = ref $err eq 'Error::TypeTiny::Assertion' ? $err->message : "$err";
+    my $code = 200;
+    my $ret = eval { $c->api->get( id => $c->param('id') ) };
+    if ($@) {
+        $code = 400;
+        my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";
         chomp $err_msg;
         $err_msg =~ s/ at .+//;
         $err_msg =~ s/\(in.+args.+\{(.+)\}.+/on param $1/;
 
-        $c->render( json => { error => $err_msg }, status => 400 );
-    })
-    ->wait;
+        $ret = { error => $err_msg };
+    }
 
-    $c->render_later;
+    return $c->render( json => { error => 'Object not found' }, status => 404 )
+      unless $ret;
+
+    $c->render( json => $ret, status => $code );
 };
 
 get '/schedule/*' => sub {
