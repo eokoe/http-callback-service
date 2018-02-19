@@ -107,15 +107,17 @@ get '/schedule/:id' => sub {
         ],
         [
             ( map { [ "http_request.$_"        => $_ ] } qw/ body headers id method retry_exp_base url / ),
-            ( map { [ "http_response.$_"       => "http_response_$_" ] } qw/ created_at response try_num / ),
-            ( map { [ "http_request_status.$_" => "http_request_status_$_" ] } qw/ done try_num / ),
+            ( map { [ "http_response.$_"       => "http_response_$_" ] } qw/ created_at response / ),
 
-            [ \"EXTRACT(EPOCH FROM http_response.took)::numeric" => 'response_took' ],
+            [ \"EXTRACT(EPOCH FROM http_response.took)::numeric" => 'http_response_took' ],
             [ \"EXTRACT(EPOCH FROM wait_until)::int"  => 'wait_until'  ],
             [ \"EXTRACT(EPOCH FROM retry_each)::int"  => 'retry_each'  ],
             [ \"EXTRACT(EPOCH FROM retry_until)::int" => 'retry_until' ],
-            [ \"EXTRACT(EPOCH FROM http_request.created_at)::int"  => 'http_request_created_at' ],
+            [ \"EXTRACT(EPOCH FROM http_request.created_at)::int"  => 'created_at' ],
             [ \"EXTRACT(EPOCH FROM http_response.created_at)::int" => 'http_response_created_at' ],
+
+            [ \'CASE WHEN (http_request_status.done) THEN TRUE ELSE FALSE END' => 'success' ],
+            [ \'CASE WHEN (http_request_status.try_num IS NULL) THEN  0 ELSE http_request_status.try_num END' => 'try_num' ],
         ],
         { 'http_request.id' => $c->param('id') }
     )
@@ -123,28 +125,12 @@ get '/schedule/:id' => sub {
         my $results = shift;
 
         my $row = $results->hash;
+
+        # Organizando as colunas.
         $row->{http_response} = {
-            map {
-                my $k = $_;
-                s/^http_response_//;
-                $_ => delete $row->{$k};
-            }
-            grep { /^http_response_/ } keys %{ $row } }
-        ;
-
-        $row->{http_request_status} = {
-            map {
-                my $v = delete $row->{$_};
-                s/^http_request_status_//;
-                $_ => $v
-            }
-            grep { /^http_request_status_/ } keys %{ $row } }
-        ;
-
-        $row->{$_} += 0 for qw/wait_until created_at response_took success try_num retry_each retry_until retry_exp_base/;
-        if ( $row->{http_response} ) {
-            $row->{http_response}{$_} += 0 for qw/created_at took/;
-        }
+            map { my $v = delete $row->{$_}; s/^http_response_//; $_ => $v }
+              grep { /^http_response_/ } keys %{ $row }
+        };
 
         $c->render( json => $row, status => 200 );
     })
@@ -160,7 +146,7 @@ get '/schedule/:id' => sub {
     })
     ->wait;
 
-    return $c->render_later;
+    $c->render_later;
 };
 
 get '/schedule/*' => sub {
