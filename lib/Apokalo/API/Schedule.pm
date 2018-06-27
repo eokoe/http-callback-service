@@ -6,6 +6,9 @@ use Apokalo::Logger;
 use Apokalo::API::Object::HTTPRequest;
 use UUID::Tiny qw/is_uuid_string/;
 
+use File::Temp;
+use Text::CSV;
+
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
 has '_http_request_rs' => (
     is      => 'rw',
@@ -36,23 +39,27 @@ sub add {
 sub add_bulk {
     my ($self, @items) = @_;
 
-    my @results = $self->_http_request_rs->populate([
-        map {
-            my %opts = %{ $_ };
-            my $obj  = Apokalo::API::Object::HTTPRequest->new(%opts);
+    $self->_http_request_rs->txn_do(
+        sub {
+            $self->_http_request_rs->populate([
+                map {
+                    my %opts = %{ $_ };
+                    my $obj  = Apokalo::API::Object::HTTPRequest->new(%opts);
 
-            +{
-                ( map { $_ => $obj->$_ } qw/method headers body url/ ),
-                ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
-                ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base          ) : () ),
+                    +{
+                        ( map { $_ => $obj->$_ } qw/method headers body url/ ),
+                        ( $obj->retry_each     ? ( retry_each     => $obj->retry_each . ' seconds' ) : () ),
+                        ( $obj->retry_exp_base ? ( retry_exp_base => $obj->retry_exp_base          ) : () ),
 
-                ( $obj->retry_until ? ( retry_until => \[ 'TO_TIMESTAMP(?)', $obj->retry_until ] ) : () ),
-                ( $obj->wait_until  ? ( wait_until  => \[ 'TO_TIMESTAMP(?)', $obj->wait_until ] )  : () ),
-            }
-        } @items
-    ]);
+                        ( $obj->retry_until ? ( retry_until => \[ 'TO_TIMESTAMP(?)', $obj->retry_until ] ) : () ),
+                        ( $obj->wait_until  ? ( wait_until  => \[ 'TO_TIMESTAMP(?)', $obj->wait_until ] )  : () ),
+                    }
+                } @items
+            ]);
+        }
+    )
 
-    return [ map { $_->id } @results ];
+    return { count => scalar(@items) };
 }
 
 sub get {
