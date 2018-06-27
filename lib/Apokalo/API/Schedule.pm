@@ -39,8 +39,6 @@ sub add {
 sub add_bulk {
     my ($self, @items) = @_;
 
-    $self->_http_request_rs->txn_do(
-        sub {
             $self->_http_request_rs->populate([
                 map {
                     my %opts = %{ $_ };
@@ -56,8 +54,6 @@ sub add_bulk {
                     }
                 } @items
             ]);
-        }
-    )
 
     return { count => scalar(@items) };
 }
