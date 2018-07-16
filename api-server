@@ -1,4 +1,7 @@
 #!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8;
 use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 
@@ -6,7 +9,7 @@ use Mojolicious::Lite;
 use Apokalo::API::Schedule;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
-my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 2626;
+my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 5000;
 
 app->config(
     hypnotoad => {
