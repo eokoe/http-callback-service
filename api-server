@@ -9,7 +9,7 @@ use Mojolicious::Lite;
 use Apokalo::API::Schedule;
 
 my $HTTP_CB_API_WORKERS = $ENV{HTTP_CB_API_WORKERS} || 4;
-my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 5000;
+my $HTTP_CB_API_PORT    = $ENV{HTTP_CB_API_PORT}    || 2626;
 
 app->config(
     hypnotoad => {
