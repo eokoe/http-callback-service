@@ -18,7 +18,7 @@ export HTTP_CB_LOG_DIR=$GIT_DIR/log/http-callback-logs
 export HTTP_CB_APP_DIR=$GIT_DIR
 
 # This flag enables bulk load endpoint.
-export HTTP_CB_USE_MOJO=0
+export HTTP_CB_USE_MOJO=no
 
 # Ports
 export HTTP_CB_API_PORT=2626
