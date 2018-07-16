@@ -89,7 +89,7 @@ get '/schedule/*' => sub {
     $c->render( json => { error => 'Method not allowed' }, status => 405 );
 };
 
-any '/(*)' => sub {
+any '/*' => sub {
     my $c = shift;
 
     $c->render( json => { error => 'Page not found' }, status => 404 );
