@@ -11,6 +11,7 @@ use HTTP::Request;
 use Apokalo::TrapSignals;
 use List::MoreUtils qw/first_index/;
 use JSON;
+use Encode qw(encode);
 
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
 has 'logger' => ( is => 'rw', lazy => 1, builder => \&get_logger );
@@ -199,7 +200,7 @@ sub _prepare_request {
 
     $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
 
-    my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} ) );
+    my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, encode('utf8', $row->{body}) ) );
     $http_ids->{$id}{id}       = $row->{id};
     $http_ids->{$id}{time}     = time;
     $http_ids->{$id}{try}      = $row->{try_num};
