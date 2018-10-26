@@ -2,7 +2,7 @@
 
 # arquivo de exemplo para iniciar o container
 export SOURCE_DIR="$HOME/projects/http-callback-service/"
-export DATA_DIR='/tmp/htpp-callback-data/'
+export DATA_DIR='/tmp/http-callback-data/'
 
 mkdir -p $DATA_DIR
 

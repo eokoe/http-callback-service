@@ -32,6 +32,8 @@ FindBin::libs \
 Furl \
 MooseX::NonMoose \
 MooseX::Singleton \
-MooseX::Types::UUID
+MooseX::Types::UUID \
+List::MoreUtils \
+JSON
 
 cpanm . --installdeps

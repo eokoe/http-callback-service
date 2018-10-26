@@ -9,6 +9,8 @@ use UUID::Tiny qw/is_uuid_string/;
 use HTTP::Async;
 use HTTP::Request;
 use Apokalo::TrapSignals;
+use List::MoreUtils qw/first_index/;
+use JSON;
 
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
 has 'logger' => ( is => 'rw', lazy => 1, builder => \&get_logger );
@@ -175,14 +177,33 @@ sub listen_queue {
 sub _prepare_request {
     my ( $self, $row ) = @_;
     my @headers = $row->{headers} ? ( map { split /:\s+/, $_, 2 } split /\n/, $row->{headers} ) : ();
-    my $async = $self->ahttp;
+    my $async  = $self->ahttp;
+    my $logger = $self->logger;
+
+    my $has_next_req = grep { $_ eq 'next-req' } @headers;
+
+    my $next_req;
+    if ( $has_next_req ) {
+        my $next_req_index = first_index { $_ eq 'next-req' } @headers;
+        $next_req = $headers[ $next_req_index + 1 ];
+
+        eval { $next_req = decode_json $next_req };
+        $logger->logconfess("Could not decode next_req json, error: $@") if $@;
+
+        my @required_fields = qw/ method url /;
+
+            defined $next_req->{$_} or $logger->logconfess("JSON does not have all the required fields.") for @required_fields;
+
+        splice @headers, $next_req_index, $next_req_index + 1;
+    }
 
     $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
 
     my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, $row->{body} ) );
-    $http_ids->{$id}{id}   = $row->{id};
-    $http_ids->{$id}{time} = time;
-    $http_ids->{$id}{try}  = $row->{try_num};
+    $http_ids->{$id}{id}       = $row->{id};
+    $http_ids->{$id}{time}     = time;
+    $http_ids->{$id}{try}      = $row->{try_num};
+    $http_ids->{$id}{next_req} = $next_req;
 
     return $id;
 }
@@ -190,10 +211,16 @@ sub _prepare_request {
 sub _set_request_status {
     my ( $self, %opts ) = @_;
 
+    my $async = $self->ahttp;
+
     $self->schema->txn_do(
         sub {
 
             my $ref = $opts{ref};
+
+            if ( $ref->{next_req} && $opts{res}->code =~ /^2/ ) {
+               $self->_http_request_rs->create( { %{$ref->{next_req} }} );
+            }
 
             $self->_http_response_rs->create(
                 {
