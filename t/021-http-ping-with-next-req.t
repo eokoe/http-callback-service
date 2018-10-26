@@ -30,7 +30,7 @@ eval {
             my $row = $api->add(
 
                 method         => 'get',
-                headers        => "Foo: bar\nFoo-www: 22\n" . 'next-req: {"url": "www.foobar.foo", "method": "get"}',
+                headers        => "Foo: bar\nFoo-www: 22\n" . 'next_req: {"url": "www.foobar.foo", "method": "get"}',
                 url            => $httpd->endpoint . '/',
                 retry_each     => 22,
                 retry_exp_base => 1.24,

@@ -181,11 +181,11 @@ sub _prepare_request {
     my $async  = $self->ahttp;
     my $logger = $self->logger;
 
-    my $has_next_req = grep { $_ eq 'next-req' } @headers;
+    my $has_next_req = grep { $_ eq 'next_req' } @headers;
 
     my $next_req;
     if ( $has_next_req ) {
-        my $next_req_index = first_index { $_ eq 'next-req' } @headers;
+        my $next_req_index = first_index { $_ eq 'next_req' } @headers;
         $next_req = $headers[ $next_req_index + 1 ];
 
         eval { $next_req = decode_json $next_req };
