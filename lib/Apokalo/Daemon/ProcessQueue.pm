@@ -220,11 +220,16 @@ sub _set_request_status {
 
             my $ref = $opts{ref};
 
-            if ( $ref->{next_req} ) {
-				$self->logger->debug( 'next_req: ' .  %{ $ref->{next_req} } );
-                use DDP; p $ref->{next_req};
-                my $next_req = $self->_http_request_rs->create( $ref->{next_req} );
+            if ( $ref->{next_req} && $opts{res}->code =~ /^2/ ) {
 
+                foreach my $k (keys %{ $ref->{next_req} } ) {
+                    # Tratando requests com json
+
+                    $ref->{next_req}->{$k} = encode_json( $ref->{next_req}->{$k} ) if ref $ref->{next_req}->{$k} eq 'HASH';
+                }
+				$self->logger->debug( 'next_req: ' .  %{ $ref->{next_req} } );
+
+                $self->_http_request_rs->create( $ref->{next_req} );
 				$self->logger->debug('next_req created, id: ' .  $next_req->id);
             }
 
