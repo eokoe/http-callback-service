@@ -221,7 +221,7 @@ sub _set_request_status {
             my $ref = $opts{ref};
 
             if ( $ref->{next_req} ) {
-                my $next_req = $self->_http_request_rs->create( { %{ $ref->{next_req} } } );
+                my $next_req = $self->_http_request_rs->create( $ref->{next_req} );
 
 				$self->logger->debug('next_req created, id: ' .  $next_req->id);
             }
