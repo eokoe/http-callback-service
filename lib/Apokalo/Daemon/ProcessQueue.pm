@@ -182,12 +182,9 @@ sub _prepare_request {
     my $logger = $self->logger;
 
     my $has_next_req = grep { $_ eq 'next_req' } @headers;
-	$self->logger->debug('request has next_req') if $has_next_req;
-	$self->logger->debug('deploy is working');
 
     my $next_req;
     if ( $has_next_req ) {
-        $self->logger->debug( 'request has next_req' );
 
         my $next_req_index = first_index { $_ eq 'next_req' } @headers;
         $next_req = $headers[ $next_req_index + 1 ];
@@ -224,9 +221,7 @@ sub _set_request_status {
             my $ref = $opts{ref};
 
             if ( $ref->{next_req} ) {
-                $self->logger->debug('creating next_req');
-
-                my $next_req = $self->_http_request_rs->create( { %{$ref->{next_req} }} );
+                my $next_req = $self->_http_request_rs->create( { %{ $ref->{next_req} } } );
 
 				$self->logger->debug('next_req created, id: ' .  $next_req->id);
             }
