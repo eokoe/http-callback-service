@@ -182,6 +182,8 @@ sub _prepare_request {
     my $logger = $self->logger;
 
     my $has_next_req = grep { $_ eq 'next_req' } @headers;
+	$self->logger->debug('request has next_req') if $has_next_req;
+	$self->logger->debug('deploy is working');
 
     my $next_req;
     if ( $has_next_req ) {
