@@ -185,6 +185,8 @@ sub _prepare_request {
 
     my $next_req;
     if ( $has_next_req ) {
+        $self->logger->debug( 'request has next_req' );
+
         my $next_req_index = first_index { $_ eq 'next_req' } @headers;
         $next_req = $headers[ $next_req_index + 1 ];
 
@@ -193,7 +195,7 @@ sub _prepare_request {
 
         my @required_fields = qw/ method url /;
 
-            defined $next_req->{$_} or $logger->logconfess("JSON does not have all the required fields.") for @required_fields;
+        defined $next_req->{$_} or $logger->logconfess("JSON does not have all the required fields.") for @required_fields;
 
         splice @headers, $next_req_index, $next_req_index + 1;
     }
@@ -219,8 +221,12 @@ sub _set_request_status {
 
             my $ref = $opts{ref};
 
-            if ( $ref->{next_req} && $opts{res}->code =~ /^2/ ) {
-               $self->_http_request_rs->create( { %{$ref->{next_req} }} );
+            if ( $ref->{next_req} ) {
+                $self->logger->debug('creating next_req');
+
+                my $next_req = $self->_http_request_rs->create( { %{$ref->{next_req} }} );
+
+				$self->logger->debug('next_req created, id: ' .  $next_req->id);
             }
 
             $self->_http_response_rs->create(
