@@ -189,7 +189,7 @@ sub _prepare_request {
         my $next_req_index = first_index { $_ eq 'next_req' } @headers;
         $next_req = $headers[ $next_req_index + 1 ];
 
-        eval { $next_req = decode_json $next_req };
+        eval { $next_req = JSON->new->utf8->decode($next_req) };
         $logger->logconfess("Could not decode next_req json, error: $@") if $@;
 
         my @required_fields = qw/ method url /;
