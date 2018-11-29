@@ -12,6 +12,7 @@ use Apokalo::TrapSignals;
 use List::MoreUtils qw/first_index/;
 use JSON;
 use Encode qw(encode);
+use JSON::MaybeXS qw( decode_json );
 
 has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
 has 'logger' => ( is => 'rw', lazy => 1, builder => \&get_logger );
@@ -189,7 +190,7 @@ sub _prepare_request {
         my $next_req_index = first_index { $_ eq 'next_req' } @headers;
         $next_req = $headers[ $next_req_index + 1 ];
 
-        eval { $next_req = JSON->new->utf8->decode($next_req) };
+        eval { $next_req = decode_json($next_req) };
         $logger->logconfess("Could not decode next_req json, error: $@") if $@;
 
         my @required_fields = qw/ method url /;
