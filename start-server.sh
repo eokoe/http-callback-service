@@ -1,5 +1,5 @@
 #!/bin/bash -e
-export WORKERS=1
+export API_WORKERS="${API_WORKERS:-1}"
 
 source /home/app/perl5/perlbrew/etc/bashrc
 
@@ -17,6 +17,6 @@ start_server \
   --port=8080 \
   -- starman \
   -I/src/lib \
-  --workers $WORKERS \
+  --workers $API_WORKERS \
   --error-log /data/log/starman.log \
   --user app --group app api-server.psgi

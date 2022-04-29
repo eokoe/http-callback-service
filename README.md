@@ -1,8 +1,9 @@
 # HTTP callback service
+
 This service is a simple way to make http callback with automatic retry and scheduling.
 
 Speed is not a primary goal, but it works using async http. It pull database 2 each seconds for new callbacks, or for callbacks that need rework.,
-When a new callback is detected, the ĺoop get restarted and this event is pulled close to 10ms (using PostgreSQL Notify/Listen), and have very low cpu utilization.
+When a new callback is detected, the loop get restarted and this event is pulled close to 10ms (using PostgreSQL Notify/Listen), and have very low cpu utilization.
 
 It's intended to be used inside an secure network (as it does not have any authorization by now).
 
@@ -69,6 +70,12 @@ linux with curl:
 
 # Requirements
 
+- docker
+
+> see docker-compose.yaml
+
+or:
+
 - perl 5.16 and newer
 - postgres 9.1 and newer
 - start-stop-daemon 1.17.5 and newer
@@ -134,4 +141,4 @@ Slower, but does not need forkprove
 
 - authorization
 - way to configure when to delete requests from database
-- .deb install?
+

@@ -1,0 +1,56 @@
+version: "3.5"
+services:
+
+  api:
+    container_name: http-callback-service
+    image: eokoe/http-callback
+    restart: unless-stopped
+    ports:
+      - "172.17.0.1:${HTTPCB_API_PORT}:8080"
+    environment:
+      API_WORKERS: ${API_WORKERS}
+      # or set on envfile.sh
+      #HTTP_CB_DB_PASS: ${HTTP_CB_DB_PASS}
+      #HTTP_CB_DB_PORT: ${HTTP_CB_DB_PORT}
+      #HTTP_CB_DB_NAME: ${HTTP_CB_DB_NAME}
+      #HTTP_CB_DB_USER: ${HTTP_CB_DB_USER}
+      #HTTP_CB_DB_HOST: ${HTTP_CB_DB_HOST}
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    #depends_on:
+    #  - db
+    volumes:
+      - ./data/api/:/data/
+      - ./:/src/
+    networks:
+      - db_network
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "${LOG_MAX_FILE}"
+        max-size: "${LOG_MAX_SIZE}"
+
+#  db:
+#    container_name: db
+#    image: postgres:14
+#    ports:
+#      - "172.17.0.1:${HTTPCB_DB_PORT}:5432"
+#    volumes:
+#        - ./data/db:/var/lib/postgresql/data
+#    environment:
+#        POSTGRES_PASSWORD: ${HTTPCB_DB_PASS}
+#        POSTGRES_USER: ${HTTPCB_DB_USER}
+#        POSTGRES_DB: ${HTTPCB_DB_NAME}
+#    networks:
+#        - db_network
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-file: '100'
+#        max-size: 1m
+#    restart: unless-stopped
+
+networks:
+  db_network:
+    name: XXXX
