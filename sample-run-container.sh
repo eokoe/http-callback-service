@@ -17,3 +17,6 @@ docker run --name http-callback \
  -p $DOCKER_LAN_IP:$LISTEN_PORT:8080 \
  --cpu-shares=512 \
  --memory 1800m -d --restart unless-stopped eokoe/http-callback
+
+
+# ufw allow from 172.17.0.0/24 to any port 11013 proto tcp
