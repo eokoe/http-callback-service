@@ -5,6 +5,7 @@ requires 'Moo';
 requires 'Log::Log4perl';
 requires 'DBIx::Class::Schema::Loader';
 requires 'DBD::Pg';
+requires 'DateTime';
 requires 'DBIx::Class::InflateColumn::DateTime';
 requires 'Web::Simple';
 requires 'Type::Tiny';
