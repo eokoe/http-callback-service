@@ -10,7 +10,7 @@ use Apokalo::API::Schedule;
 
 no warnings 'uninitialized';
 my $api = Apokalo::API::Schedule->new;
-
+*local_utf8_downgrade = defined(&utf8::downgrade) ? sub { utf8::downgrade($_[0], 1) or die "body content must be bytes, not utf8" } : sub { };
 sub dispatch_request {
 
     sub (POST + /schedule + ?* + %*) {
@@ -19,7 +19,10 @@ sub dispatch_request {
         $get_params = { %{ $get_params || {} }, %{ $body_params || {} } };
 
         my $code = 201;
-        my $ret = eval { $api->add(%$get_params) };
+        my $ret = eval {
+            local_utf8_downgrade($get_params->{body})if (exists $get_params->{body});
+            $api->add(%$get_params)
+        };
         if ($@) {
             $code = 400;
             my $err_msg = ref $@ eq 'Error::TypeTiny::Assertion' ? $@->message : "$@";

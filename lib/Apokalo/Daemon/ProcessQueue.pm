@@ -11,8 +11,8 @@ use HTTP::Request;
 use Apokalo::TrapSignals;
 use Encode qw(decode);
 
-has 'schema' => ( is => 'rw', lazy => 1, builder => \&GET_SCHEMA );
-has 'logger' => ( is => 'rw', lazy => 1, builder => \&get_logger );
+has 'schema' => (is => 'rw', lazy => 1, builder => \&GET_SCHEMA);
+has 'logger' => (is => 'rw', lazy => 1, builder => \&get_logger);
 
 has '_http_request_rs' => (
     is      => 'rw',
@@ -35,19 +35,19 @@ has '_http_response_rs' => (
 use Time::HiRes qw(time);
 
 my $http_ids = {};
-has 'ahttp' => ( is => 'rw', lazy => 1, builder => '_build_http' );
+has 'ahttp' => (is => 'rw', lazy => 1, builder => '_build_http');
 
 sub _build_http {
-    HTTP::Async->new( timeout => 60, max_request_time => 120, slots => 1000 );
+    HTTP::Async->new(timeout => 60, max_request_time => 120, slots => 1000);
 }
 
 sub pending_jobs {
-    my ( $self, %opts ) = @_;
+    my ($self, %opts) = @_;
 
     my @rows = $self->_http_request_rs->search(
         {
             '-or' => [
-                { 'http_request_status.done' => undef },
+                {'http_request_status.done' => undef},
                 {
                     'http_request_status.done' => 0,
 
@@ -57,21 +57,21 @@ sub pending_jobs {
 
                 }
             ],
-            wait_until  => { '<=' => \'now()' },
-            retry_until => { '>=' => \'now()' },
+            wait_until  => {'<=' => \'now()'},
+            retry_until => {'>=' => \'now()'},
             (
                 exists $opts{id_not_in}
-                  && ref $opts{id_not_in} eq 'ARRAY' ? ( '-not' => { 'me.id' => { 'in' => $opts{id_not_in} } } ) : ()
-              )
+                  && ref $opts{id_not_in} eq 'ARRAY' ? ('-not' => {'me.id' => {'in' => $opts{id_not_in}}}) : ()
+            )
 
         },
         {
-            rows => $opts{rows} ? $opts{rows} : 1000,
-            join => 'http_request_status',
+            rows      => $opts{rows} ? $opts{rows} : 1000,
+            join      => 'http_request_status',
             'columns' => [
                 {
-                    ( map { $_ => $_ } qw/body  headers id method retry_exp_base url / ),
-                    ( map { $_ => \"EXTRACT(EPOCH FROM $_)::int" } qw/retry_each retry_until wait_until created_at/ ),
+                    (map { $_ => $_ } qw/body  headers id method retry_exp_base url /),
+                    (map { $_ => \"EXTRACT(EPOCH FROM $_)::int" } qw/retry_each retry_until wait_until created_at/),
                     try_num => \
                       'CASE WHEN (http_request_status.try_num IS NULL) THEN  0 ELSE http_request_status.try_num END',
                 }
@@ -83,20 +83,20 @@ sub pending_jobs {
 }
 
 sub run_once {
-    my ( $self, %opts ) = @_;
+    my ($self, %opts) = @_;
 
-    my ($pending) = $self->pending_jobs( rows => 1 );
+    my ($pending) = $self->pending_jobs(rows => 1);
     return -2 unless $pending;
 
     my $async = $self->ahttp;
 
     $self->_prepare_request($pending);
 
-    if ( $async->not_empty ) {
-        if ( my ( $response, $iid ) = $async->wait_for_next_response(30) ) {
+    if ($async->not_empty) {
+        if (my ($response, $iid) = $async->wait_for_next_response(30)) {
 
             # deal with $response
-            $self->_set_request_status( res => $response, ref => delete $http_ids->{$iid} );
+            $self->_set_request_status(res => $response, ref => delete $http_ids->{$iid});
             return 1;
         }
         else {
@@ -118,7 +118,7 @@ sub listen_queue {
     my $sleep = $ENV{HTTP_CB_MIN_POLL_INTERVAL} || 0.05;
 
     # default to 5 seconds
-    my $loops_before_rework = ( $ENV{HTTP_CB_REWORK_INTERVAL} || 5 );
+    my $loops_before_rework = ($ENV{HTTP_CB_REWORK_INTERVAL} || 5);
 
     $loops_before_rework = 1    if $loops_before_rework < 1;
     $sleep               = 0.01 if $sleep < 0.01;
@@ -132,31 +132,31 @@ sub listen_queue {
     eval {
         while (1) {
 
-            if ( $async->empty ) {
+            if ($async->empty) {
                 ON_TERM_EXIT;
                 EXIT_IF_ASKED;
             }
 
             ON_TERM_WAIT;
-            while ( my $notify = $dbh->pg_notifies ) {
+            while (my $notify = $dbh->pg_notifies) {
                 $loop_times = 0;
             }
 
-            if ( $loop_times == 0 ) {
-                my @pendings = $self->pending_jobs( id_not_in => [ map { $http_ids->{$_}{id} } keys %{$http_ids} ] );
+            if ($loop_times == 0) {
+                my @pendings = $self->pending_jobs(id_not_in => [map { $http_ids->{$_}{id} } keys %{$http_ids}]);
 
                 $self->_prepare_request($_) for @pendings;
             }
 
-            if ( $async->not_empty ) {
+            if ($async->not_empty) {
 
-                while ( my ( $response, $iid ) = $async->next_response ) {
+                while (my ($response, $iid) = $async->next_response) {
 
                     my $ref = delete $http_ids->{$iid};
-                    $self->logger->debug( join ' ', 'finished', $ref->{id}, 'with code', $response->code );
+                    $self->logger->debug(join ' ', 'finished', $ref->{id}, 'with code', $response->code);
 
                     # deal with $response
-                    $self->_set_request_status( res => $response, ref => $ref );
+                    $self->_set_request_status(res => $response, ref => $ref);
 
                 }
             }
@@ -174,13 +174,13 @@ sub listen_queue {
 }
 
 sub _prepare_request {
-    my ( $self, $row ) = @_;
-    my @headers = $row->{headers} ? ( map { split /:\s+/, $_, 2 } split /\n/, $row->{headers} ) : ();
-    my $async = $self->ahttp;
+    my ($self, $row) = @_;
+    my @headers = $row->{headers} ? (map { split /:\s+/, $_, 2 } split /\n/, $row->{headers}) : ();
+    my $async   = $self->ahttp;
 
-    $self->logger->debug( join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue' );
+    $self->logger->debug(join ' ', 'Appending', $row->{method}, $row->{url}, $row->{id}, 'to queue');
+    my $id = $async->add(HTTP::Request->new(uc $row->{method}, $row->{url}, \@headers, $row->{body}));
 
-    my $id = $async->add( HTTP::Request->new( uc $row->{method}, $row->{url}, \@headers, decode('utf-8', $row->{body})));
     $http_ids->{$id}{id}   = $row->{id};
     $http_ids->{$id}{time} = time;
     $http_ids->{$id}{try}  = $row->{try_num};
@@ -189,7 +189,7 @@ sub _prepare_request {
 }
 
 sub _set_request_status {
-    my ( $self, %opts ) = @_;
+    my ($self, %opts) = @_;
 
     $self->schema->txn_do(
         sub {
@@ -200,14 +200,14 @@ sub _set_request_status {
                 {
                     http_request_id => $ref->{id},
                     try_num         => $ref->{try} + 1,
-                    took            => ( time - $ref->{time} ) . ' seconds',
+                    took            => (time - $ref->{time}) . ' seconds',
                     response        => $opts{res}->as_string
                 }
             );
 
             $self->_http_request_status_rs->update_or_create(
-                { done => $opts{res}->code =~ /^2/ ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id} },
-                { http_request_id => $ref->{id} }
+                {done => $opts{res}->code =~ /^2/ ? 1 : 0, try_num => $ref->{try} + 1, http_request_id => $ref->{id}},
+                {http_request_id => $ref->{id}}
             );
 
         }
