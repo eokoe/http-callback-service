@@ -5,12 +5,12 @@ use utf8;
 use Types::Standard qw( Str Num Int Bool );
 use Type::Utils qw( declare as where inline_as coerce from );
 
-use Data::Validate::URI qw(is_http_uri is_https_uri);
+use Data::Validate::URI qw(is_uri);
 
 my $HTTP_METHOD_STR = declare as Str, where { $_ =~ /^(GET|POST|PUT|HEAD)$/io };
 coerce $HTTP_METHOD_STR, from Str, q{ uc $_ };
 
-my $HTTP_URL_STR = declare as Str, where { is_http_uri($_) || is_https_uri($_) };
+my $HTTP_URL_STR = declare as Str, where { is_uri($_) && $_ =~ /^https?:\/\//io };
 
 my $SmallInt = declare as Int, where { $_ > 0 && $_ < 32767 };
 my $SmallNum = declare as Num, where { $_ > 0 && $_ < 32767 };
